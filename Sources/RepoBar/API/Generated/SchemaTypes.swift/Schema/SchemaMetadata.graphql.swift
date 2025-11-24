@@ -25,9 +25,9 @@ extension RepoBarGraphQL {
   typealias MutableInlineFragment = RepoBarGraphQL_MutableInlineFragment
 
   enum SchemaMetadata: ApolloAPI.SchemaMetadata {
-    static let configuration: any ApolloAPI.SchemaConfiguration.Type = SchemaConfiguration.self
+    nonisolated(unsafe) static let configuration: any ApolloAPI.SchemaConfiguration.Type = SchemaConfiguration.self
 
-    static func objectType(forTypename typename: String) -> ApolloAPI.Object? {
+    static nonisolated func objectType(forTypename typename: String) -> ApolloAPI.Object? {
       switch typename {
       case "AddedToMergeQueueEvent": return RepoBarGraphQL.Objects.AddedToMergeQueueEvent
       case "AddedToProjectEvent": return RepoBarGraphQL.Objects.AddedToProjectEvent
