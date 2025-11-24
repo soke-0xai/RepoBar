@@ -11,10 +11,13 @@ final class OAuthCoordinator {
 
     func login(clientID: String, clientSecret: String, pemPath: String, host: URL, loopbackPort: Int) async throws {
         let normalizedHost = try normalize(host: host)
+        var appJWT: String?
         if !pemPath.isEmpty {
             let exists = FileManager.default.fileExists(atPath: pemPath)
             guard exists else { throw GitHubAPIError.invalidHost } // Re-use generic error for now
-            await DiagnosticsLogger.shared.message("Using PEM at \(pemPath)")
+            let pem = try String(contentsOfFile: pemPath, encoding: .utf8)
+            appJWT = try? JWTSigner.sign(appID: "2344358", pemString: pem)
+            await DiagnosticsLogger.shared.message("Using PEM at \(pemPath); JWT generated: \(appJWT != nil)")
         } else {
             await DiagnosticsLogger.shared.message("No PEM provided; continuing with client secret only.")
         }
@@ -61,7 +64,8 @@ final class OAuthCoordinator {
         let (data, response) = try await URLSession.shared.data(for: tokenRequest)
         guard (response as? HTTPURLResponse)?.statusCode == 200 else {
             self.logger.error("Token exchange failed")
-            await DiagnosticsLogger.shared.message("Token exchange failed status=\((response as? HTTPURLResponse)?.statusCode ?? -1)")
+            await DiagnosticsLogger.shared
+                .message("Token exchange failed status=\((response as? HTTPURLResponse)?.statusCode ?? -1)")
             throw URLError(.badServerResponse)
         }
         let decoded = try JSONDecoder().decode(TokenResponse.self, from: data)
