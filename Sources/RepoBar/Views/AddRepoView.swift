@@ -5,6 +5,7 @@ struct AddRepoView: View {
     var onSelect: (Repository) -> Void
     @State private var query = ""
     @State private var results: [Repository] = []
+    @State private var isLoading = false
 
     @EnvironmentObject var appState: AppState
     @EnvironmentObject var session: Session
@@ -18,6 +19,9 @@ struct AddRepoView: View {
                 .onSubmit {
                     Task { await self.search() }
                 }
+            if self.isLoading {
+                ProgressView().padding(.vertical, 8)
+            }
             List(self.results) { repo in
                 Button {
                     self.onSelect(repo)
@@ -27,6 +31,10 @@ struct AddRepoView: View {
                         Text(repo.fullName).bold()
                         if let release = repo.latestRelease {
                             Text("Latest: \(release.name)").font(.caption)
+                        } else {
+                            Text("Issues: \(repo.openIssues) • Owner: \(repo.owner)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -45,9 +53,15 @@ struct AddRepoView: View {
     private func searchDefault() async { await self.search() }
 
     private func search() async {
-        guard !self.query.isEmpty else { return }
+        self.isLoading = true
+        defer { self.isLoading = false }
         do {
-            let repos = try await appState.github.searchRepositories(matching: self.query)
+            let trimmed = self.query.trimmingCharacters(in: .whitespacesAndNewlines)
+            let repos: [Repository] = if trimmed.isEmpty {
+                try await appState.github.recentRepositories(limit: 10)
+            } else {
+                try await appState.github.searchRepositories(matching: trimmed)
+            }
             await MainActor.run { self.results = repos }
         } catch {
             // Ignored; UI stays empty

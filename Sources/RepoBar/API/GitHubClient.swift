@@ -192,6 +192,27 @@ actor GitHubClient {
             backoffEntries: backoffCount)
     }
 
+    /// Recent repositories for the authenticated user, sorted by activity.
+    func recentRepositories(limit: Int = 8) async throws -> [Repository] {
+        let items = try await self.userReposSorted(limit: limit)
+        return items.map { item in
+            Repository(
+                id: item.id.description,
+                name: item.name,
+                owner: item.owner.login,
+                sortOrder: nil,
+                error: nil,
+                rateLimitedUntil: nil,
+                ciStatus: .unknown,
+                openIssues: item.openIssuesCount,
+                openPulls: 0,
+                latestRelease: nil,
+                latestActivity: nil,
+                traffic: nil,
+                heatmap: [])
+        }
+    }
+
     // MARK: - Internal REST helpers
 
     private enum CountType { case issue, pullRequest }
