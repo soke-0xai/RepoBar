@@ -26,10 +26,12 @@ log "==> swift test"
 swift test -q
 
 log "==> Codesigning debug build"
+DEFAULT_IDENTITY="Apple Development: Peter Steinberger"
+IDENTITY="${CODESIGN_IDENTITY:-$DEFAULT_IDENTITY}"
 if [ -d "${ROOT_DIR}/.build/debug/${APP_NAME}.app" ]; then
-  "${ROOT_DIR}/Scripts/codesign_app.sh" "${ROOT_DIR}/.build/debug/${APP_NAME}.app" "${CODESIGN_IDENTITY:-Apple Development}" || true
+  "${ROOT_DIR}/Scripts/codesign_app.sh" "${ROOT_DIR}/.build/debug/${APP_NAME}.app" "$IDENTITY" || true
 else
-  codesign --force --sign "${CODESIGN_IDENTITY:-Apple Development}" "${ROOT_DIR}/.build/debug/${APP_NAME}" 2>/dev/null || true
+  codesign --force --sign "$IDENTITY" "${ROOT_DIR}/.build/debug/${APP_NAME}" 2>/dev/null || true
 fi
 
 log "==> Launching debug build"

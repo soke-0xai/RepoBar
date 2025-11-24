@@ -2,7 +2,9 @@
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_PATH="${1:-$ROOT_DIR/.build/debug/RepoBar.app}"
-IDENTITY="${2:-Apple Development}"
+# Default to Peter's Apple Development cert; allow override via second arg or CODESIGN_IDENTITY.
+DEFAULT_IDENTITY="Apple Development: Peter Steinberger"
+IDENTITY="${2:-${CODESIGN_IDENTITY:-$DEFAULT_IDENTITY}}"
 ENTITLEMENTS="$ROOT_DIR/RepoBar.entitlements"
 TMP_ENTITLEMENTS="/tmp/RepoBar_entitlements.plist"
 
