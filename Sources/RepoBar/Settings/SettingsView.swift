@@ -99,7 +99,6 @@ struct AccountSettingsView: View {
     @State private var clientID = "Iv23liGm2arUyotWSjwJ"
     @State private var clientSecret = ""
     @State private var enterpriseHost = ""
-    @State private var port: Int = 53682
     @State private var validationError: String?
 
     var body: some View {
@@ -126,12 +125,6 @@ struct AccountSettingsView: View {
                     .font(.caption)
             }
 
-            Section("Callback") {
-                Stepper(value: self.$port, in: 1025...65535) {
-                    Text("Loopback port: \(self.port)")
-                }
-            }
-
             if let validationError {
                 Text(validationError)
                     .font(.caption)
@@ -140,7 +133,6 @@ struct AccountSettingsView: View {
         }
         .padding()
         .onAppear {
-            self.port = self.session.settings.loopbackPort
             if let enterprise = self.session.settings.enterpriseHost {
                 self.enterpriseHost = enterprise.absoluteString
             }
@@ -150,7 +142,6 @@ struct AccountSettingsView: View {
     private func login() {
         Task { @MainActor in
             self.session.account = .loggingIn
-            self.session.settings.loopbackPort = self.port
             let enterpriseURL = self.normalizedEnterpriseHost()
 
             if let enterpriseURL {
