@@ -102,13 +102,7 @@ final class AppState: ObservableObject {
             Task { await self?.refresh() }
         }
         Task { await DiagnosticsLogger.shared.setEnabled(self.session.settings.diagnosticsEnabled) }
-        Task {
-            await self.github.setInstallationTokenProvider { @Sendable [weak self] in
-                guard let self else { throw URLError(.userAuthenticationRequired) }
-                // For now assume first installation is the primary; use host remembered in settings.
-                return try await self.auth.installationToken(for: "1") // placeholder installation ID
-            }
-        }
+        Task { await self.configureInstallationProvider() }
     }
 
     /// Starts the OAuth flow using the default GitHub App credentials, invoked from the logged-out prompt.
@@ -197,6 +191,15 @@ final class AppState: ObservableObject {
 
     func persistSettings() {
         self.settingsStore.save(self.session.settings)
+    }
+
+    private func configureInstallationProvider() async {
+        await self.github.setInstallationTokenProvider { @Sendable [weak self] in
+            guard let self else { throw URLError(.userAuthenticationRequired) }
+            let installs = try await self.auth.installations()
+            guard let first = installs.first else { throw URLError(.userAuthenticationRequired) }
+            return try await self.auth.installationToken(for: String(first.id))
+        }
     }
 
     private func currentUserNameOrEmpty() -> String {

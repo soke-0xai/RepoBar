@@ -9,6 +9,7 @@ final class OAuthCoordinator {
     private let logger = Logger(subsystem: "com.steipete.repobar", category: "oauth")
     private var lastHost: URL = .init(string: "https://github.com")!
     private var appJWT: String?
+    private var cachedInstallationToken: (token: String, expiresAt: Date?)?
 
     func login(clientID: String, clientSecret: String, pemPath: String, host: URL, loopbackPort: Int) async throws {
         let normalizedHost = try normalize(host: host)
@@ -118,6 +119,11 @@ final class OAuthCoordinator {
 
     func installationToken(for installationID: String) async throws -> String {
         guard let jwt = self.appJWT else { throw GitHubAPIError.invalidPEM }
+        if let cached = self.cachedInstallationToken,
+           let expiry = cached.expiresAt,
+           expiry > Date().addingTimeInterval(60) {
+            return cached.token
+        }
         let url = self.lastHost.appending(path: "/app/installations/\(installationID)/access_tokens")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -128,22 +134,43 @@ final class OAuthCoordinator {
             throw URLError(.badServerResponse)
         }
         let decoded = try JSONDecoder().decode(InstallationTokenResponse.self, from: data)
-        try self.tokenStore.save(tokens: OAuthTokens(
-            accessToken: decoded.token,
-            refreshToken: "",
-            expiresAt: decoded.expiresAt))
+        self.cachedInstallationToken = (decoded.token, decoded.expiresAt)
         return decoded.token
     }
 
-    private struct InstallationTokenResponse: Decodable {
-        let token: String
-        let expiresAt: Date
-
-        enum CodingKeys: String, CodingKey {
-            case token
-            case expiresAt = "expires_at"
+    func installations() async throws -> [Installation] {
+        guard let jwt = self.appJWT else { throw GitHubAPIError.invalidPEM }
+        let url = self.lastHost.appending(path: "/app/installations")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
+        request.addValue("application/json", forHTTPHeaderField: "Accept")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            throw URLError(.badServerResponse)
         }
+        let decoded = try JSONDecoder().decode([Installation].self, from: data)
+        return decoded
     }
+
+private struct InstallationTokenResponse: Decodable {
+    let token: String
+    let expiresAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case token
+        case expiresAt = "expires_at"
+    }
+}
+
+struct Installation: Decodable {
+    let id: Int
+    let account: Account
+
+    struct Account: Decodable {
+        let login: String
+    }
+}
 
     private func normalize(host: URL) throws -> URL {
         guard var components = URLComponents(url: host, resolvingAgainstBaseURL: false) else {
