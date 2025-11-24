@@ -103,7 +103,6 @@ struct AccountSettingsView: View {
     @State private var enterpriseHost = ""
     @State private var port: Int = 53682
     @State private var validationError: String?
-    @State private var installationSummary: String?
 
     var body: some View {
         Form {
@@ -142,16 +141,10 @@ struct AccountSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.red)
             }
-
-            if let installationSummary {
-                LabeledContent("Installations") { Text(installationSummary) }
-                    .font(.caption)
-            }
         }
         .padding()
         .onAppear {
             self.port = self.session.settings.loopbackPort
-            Task { await self.loadInstallations() }
         }
     }
 
@@ -195,7 +188,6 @@ struct AccountSettingsView: View {
                     pemPath: self.pemPath,
                     host: self.session.settings.enterpriseHost ?? self.session.settings.githubHost,
                     loopbackPort: self.port)
-                await self.loadInstallations()
                 if let user = try? await appState.github.currentUser() {
                     self.session.account = .loggedIn(user)
                     self.session.lastError = nil
@@ -216,20 +208,6 @@ struct AccountSettingsView: View {
         components.query = nil
         components.fragment = nil
         return components.url
-    }
-
-    private func loadInstallations() async {
-        do {
-            let installs = try await self.appState.auth.installations()
-            if installs.isEmpty {
-                self.installationSummary = "None"
-            } else {
-                let names = installs.prefix(3).map { "#\($0.id) \($0.account.login)" }.joined(separator: ", ")
-                self.installationSummary = names + (installs.count > 3 ? "…" : "")
-            }
-        } catch {
-            self.installationSummary = nil
-        }
     }
 }
 
