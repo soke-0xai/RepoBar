@@ -22,6 +22,7 @@ actor GitHubClient {
     func setAPIHost(_ host: URL) {
         self.apiHost = host
         Task { await self.graphQL.setEndpoint(apiHost: host) }
+        Task { await DiagnosticsLogger.shared.message("API host set to \(host.absoluteString)") }
     }
 
     func setTokenProvider(_ provider: @Sendable @escaping () async throws -> OAuthTokens?) {

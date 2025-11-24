@@ -10,8 +10,14 @@ final class OAuthCoordinator {
     private var lastHost: URL = .init(string: "https://github.com")!
 
     func login(clientID: String, clientSecret: String, pemPath: String, host: URL, loopbackPort: Int) async throws {
-        _ = pemPath // placeholder until signing with private key is wired
         let normalizedHost = try normalize(host: host)
+        if !pemPath.isEmpty {
+            let exists = FileManager.default.fileExists(atPath: pemPath)
+            guard exists else { throw GitHubAPIError.invalidHost } // Re-use generic error for now
+            await DiagnosticsLogger.shared.message("Using PEM at \(pemPath)")
+        } else {
+            await DiagnosticsLogger.shared.message("No PEM provided; continuing with client secret only.")
+        }
         self.lastHost = normalizedHost
         let authBase = normalizedHost.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let authEndpoint = URL(string: "\(authBase)/login/oauth/authorize")!
@@ -55,6 +61,7 @@ final class OAuthCoordinator {
         let (data, response) = try await URLSession.shared.data(for: tokenRequest)
         guard (response as? HTTPURLResponse)?.statusCode == 200 else {
             self.logger.error("Token exchange failed")
+            await DiagnosticsLogger.shared.message("Token exchange failed status=\((response as? HTTPURLResponse)?.statusCode ?? -1)")
             throw URLError(.badServerResponse)
         }
         let decoded = try JSONDecoder().decode(TokenResponse.self, from: data)
@@ -63,6 +70,7 @@ final class OAuthCoordinator {
             refreshToken: decoded.refreshToken ?? "",
             expiresAt: Date().addingTimeInterval(TimeInterval(decoded.expiresIn ?? 3600)))
         try self.tokenStore.save(tokens: tokens)
+        await DiagnosticsLogger.shared.message("Login succeeded; tokens stored.")
         server.stop()
     }
 
