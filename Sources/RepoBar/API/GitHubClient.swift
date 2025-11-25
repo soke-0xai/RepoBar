@@ -338,7 +338,10 @@ actor GitHubClient {
             url: apiHost.appending(path: "/repos/\(owner)/\(name)/actions/runs"),
             resolvingAgainstBaseURL: false
         )!
-        components.queryItems = [URLQueryItem(name: "per_page", value: "1")]
+        components.queryItems = [
+            URLQueryItem(name: "per_page", value: "1"),
+            URLQueryItem(name: "branch", value: "main")
+        ]
         let (data, _) = try await authorizedGet(url: components.url!, token: token)
         let runs = try jsonDecoder.decode(ActionsRunsResponse.self, from: data)
         guard let run = runs.workflowRuns.first else { return CIStatusDetails(status: .unknown, runCount: runs.totalCount) }
