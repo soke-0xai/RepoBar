@@ -19,12 +19,11 @@ struct MenuContentView: View {
                 } else {
                     if let reset = session.rateLimitReset {
                         RateLimitBanner(reset: reset)
-                    }
-                    if let error = session.lastError {
+                    } else if let error = session.lastError {
                         ErrorBanner(message: error)
                     }
 
-                    HStack {
+                    HStack(spacing: 10) {
                         Label("Repositories", systemImage: "shippingbox.fill")
                             .font(.headline)
                         Spacer()
@@ -36,10 +35,13 @@ struct MenuContentView: View {
                         }
                         .buttonStyle(.bordered)
                     }
+                    .padding(.horizontal, 14)
+                    .padding(.top, 4)
                     if !self.session.settings.pinnedRepositories.isEmpty {
                         Text("Drag cards or use the ... menu to reorder pinned repos.")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
+                            .padding(.horizontal, 14)
                     }
 
                     if self.viewModels().isEmpty {
