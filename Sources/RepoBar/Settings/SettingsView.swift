@@ -449,11 +449,17 @@ struct DebugSettingsView: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
-                if let rest = diagnostics.restRateLimit {
-                    LabeledContent("REST rate limit") { Text(self.formatRate(rest)) }
+                LabeledContent("REST rate limit") {
+                    Text(
+                        self.diagnostics.restRateLimit.map(self.formatRate)
+                            ?? "— (not fetched yet)"
+                    )
                 }
-                if let graphql = diagnostics.graphQLRateLimit {
-                    LabeledContent("GraphQL rate limit") { Text(self.formatRate(graphql)) }
+                LabeledContent("GraphQL rate limit") {
+                    Text(
+                        self.diagnostics.graphQLRateLimit.map(self.formatRate)
+                            ?? "— (not fetched yet)"
+                    )
                 }
                 if let reset = diagnostics.rateLimitReset {
                     LabeledContent("Rate limit resets") {
