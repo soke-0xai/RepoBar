@@ -379,28 +379,44 @@ actor GitHubClient {
     }
 
     private func trafficStats(owner: String, name: String) async throws -> TrafficStats {
-        let token = try await validAccessToken()
-        let viewsURL = self.apiHost.appending(path: "/repos/\(owner)/\(name)/traffic/views")
-        let clonesURL = self.apiHost.appending(path: "/repos/\(owner)/\(name)/traffic/clones")
-        async let viewsPair = self.authorizedGet(url: viewsURL, token: token)
-        async let clonesPair = self.authorizedGet(url: clonesURL, token: token)
-        let views = try await jsonDecoder.decode(TrafficResponse.self, from: viewsPair.0)
-        let clones = try await jsonDecoder.decode(TrafficResponse.self, from: clonesPair.0)
-        return TrafficStats(uniqueVisitors: views.uniques, uniqueCloners: clones.uniques)
+        do {
+            let token = try await validAccessToken()
+            let viewsURL = self.apiHost.appending(path: "/repos/\(owner)/\(name)/traffic/views")
+            let clonesURL = self.apiHost.appending(path: "/repos/\(owner)/\(name)/traffic/clones")
+            async let viewsPair = self.authorizedGet(url: viewsURL, token: token)
+            async let clonesPair = self.authorizedGet(url: clonesURL, token: token)
+            let views = try await jsonDecoder.decode(TrafficResponse.self, from: viewsPair.0)
+            let clones = try await jsonDecoder.decode(TrafficResponse.self, from: clonesPair.0)
+            return TrafficStats(uniqueVisitors: views.uniques, uniqueCloners: clones.uniques)
+        } catch let error as GitHubAPIError {
+            if case let .badStatus(code, _) = error, code == 403 {
+                await self.diag.message("Traffic endpoints forbidden for \(owner)/\(name); skipping")
+                return TrafficStats(uniqueVisitors: 0, uniqueCloners: 0)
+            }
+            throw error
+        }
     }
 
     private func commitHeatmap(owner: String, name: String) async throws -> [HeatmapCell] {
-        let token = try await validAccessToken()
-        let (data, _) = try await authorizedGet(
-            url: apiHost.appending(path: "/repos/\(owner)/\(name)/stats/commit_activity"),
-            token: token
-        )
-        let weeks = try jsonDecoder.decode([CommitActivityWeek].self, from: data)
-        return weeks.flatMap { week in
-            zip(0 ..< 7, week.days).map { offset, count in
-                let date = Date(timeIntervalSince1970: TimeInterval(week.weekStart + offset * 86400))
-                return HeatmapCell(date: date, count: count)
+        do {
+            let token = try await validAccessToken()
+            let (data, _) = try await authorizedGet(
+                url: apiHost.appending(path: "/repos/\(owner)/\(name)/stats/commit_activity"),
+                token: token
+            )
+            let weeks = try jsonDecoder.decode([CommitActivityWeek].self, from: data)
+            return weeks.flatMap { week in
+                zip(0 ..< 7, week.days).map { offset, count in
+                    let date = Date(timeIntervalSince1970: TimeInterval(week.weekStart + offset * 86400))
+                    return HeatmapCell(date: date, count: count)
+                }
             }
+        } catch let error as GitHubAPIError {
+            if case let .badStatus(code, _) = error, code == 403 {
+                await self.diag.message("Commit activity forbidden for \(owner)/\(name); skipping heatmap")
+                return []
+            }
+            throw error
         }
     }
 
