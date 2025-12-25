@@ -41,12 +41,7 @@ struct RepositoryViewModel: Identifiable, Equatable {
             self.latestReleaseDate = nil
         }
 
-        if let activity = repo.latestActivity {
-            self.activityLine = "\(activity.actor): \(activity.title)"
-            self.activityURL = activity.url
-        } else {
-            self.activityLine = nil
-            self.activityURL = nil
-        }
+        self.activityLine = repo.activityLine
+        self.activityURL = repo.activityURL
     }
 }

@@ -27,8 +27,10 @@ private extension RepoBarCLI {
             try await Self.login(options.login)
         case .logout:
             Self.logout()
-        case .list:
+        case .repos:
             try await Self.list(options: options)
+        case .status:
+            try Self.status(options: options)
         }
     }
 
@@ -100,11 +102,64 @@ private extension RepoBarCLI {
         print("Logged out.")
     }
 
+    static func status(options: CLIOptions) throws {
+        let tokens = try TokenStore.shared.load()
+        guard let tokens else {
+            if options.jsonOutput {
+                let output = StatusOutput(
+                    authenticated: false,
+                    host: nil,
+                    expiresAt: nil,
+                    expiresIn: nil,
+                    expired: nil
+                )
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                let data = try encoder.encode(output)
+                if let json = String(data: data, encoding: .utf8) { print(json) }
+            } else {
+                print("Logged out.")
+            }
+            return
+        }
+
+        let settings = SettingsStore().load()
+        let host = (settings.enterpriseHost ?? settings.githubHost).absoluteString
+        let now = Date()
+        let expiresAt = tokens.expiresAt
+        let expired = expiresAt.map { $0 <= now }
+        let expiresIn = expiresAt.map { RelativeFormatter.string(from: $0, relativeTo: now) }
+
+        if options.jsonOutput {
+            let output = StatusOutput(
+                authenticated: true,
+                host: host,
+                expiresAt: expiresAt,
+                expiresIn: expiresIn,
+                expired: expired
+            )
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(output)
+            if let json = String(data: data, encoding: .utf8) { print(json) }
+        } else {
+            print("Logged in.")
+            print("Host: \(host)")
+            if let expiresAt {
+                let state = expired == true ? "expired" : "expires"
+                let label = expiresIn ?? expiresAt.formatted()
+                print("\(state.capitalized): \(label)")
+            } else {
+                print("Expires: unknown")
+            }
+        }
+    }
+
     static func prepareRows(repos: [Repository], now: Date = Date()) -> [RepoRow] {
         repos.map { repo in
-            let activityDate = Self.activityDate(for: repo)
+            let activityDate = repo.activityDate
             let activityLabel = activityDate.map { RelativeFormatter.string(from: $0, relativeTo: now) } ?? "-"
-            let activityLine = Self.activityLine(for: repo)
+            let activityLine = repo.activityLine(fallbackToPush: true) ?? "-"
             return RepoRow(repo: repo, activityDate: activityDate, activityLabel: activityLabel, activityLine: activityLine)
         }
     }
@@ -121,28 +176,6 @@ private extension RepoBarCLI {
         }
     }
 
-    static func activityDate(for repo: Repository) -> Date? {
-        switch (repo.latestActivity?.date, repo.pushedAt) {
-        case let (left?, right?):
-            return max(left, right)
-        case let (left?, nil):
-            return left
-        case let (nil, right?):
-            return right
-        default:
-            return nil
-        }
-    }
-
-    static func activityLine(for repo: Repository) -> String {
-        if let activity = repo.latestActivity {
-            return "\(activity.actor): \(activity.title)"
-        }
-        if repo.pushedAt != nil {
-            return "push"
-        }
-        return "-"
-    }
 }
 
 private extension RepoBarCLI {
@@ -243,6 +276,14 @@ private struct RepoOutput: Codable {
     let error: String?
 }
 
+private struct StatusOutput: Codable {
+    let authenticated: Bool
+    let host: String?
+    let expiresAt: Date?
+    let expiresIn: String?
+    let expired: Bool?
+}
+
 private struct CLIOptions {
     let command: CLICommand
     let limit: Int?
@@ -252,7 +293,7 @@ private struct CLIOptions {
     let login: LoginOptions
 
     static func parse(_ args: ArraySlice<String>) throws -> CLIOptions {
-        var command: CLICommand = .list
+        var command: CLICommand = .repos
         var limit: Int?
         var jsonOutput = false
         var showHelp = false
@@ -272,8 +313,6 @@ private struct CLIOptions {
                 showHelp = true
             case "--json":
                 jsonOutput = true
-            case "--login":
-                command = .login
             case let value where value.hasPrefix("--limit="):
                 let raw = String(value.dropFirst("--limit=".count))
                 limit = try parseLimit(raw)
@@ -333,15 +372,17 @@ private struct CLIOptions {
 }
 
 private enum CLICommand {
-    case list
+    case repos
     case login
     case logout
+    case status
 
     static func parse(_ raw: String) throws -> CLICommand {
         switch raw {
-        case "list": return .list
+        case "repos", "list": return .repos
         case "login": return .login
         case "logout": return .logout
+        case "status": return .status
         default: throw CLIError.unknownCommand(raw)
         }
     }
@@ -447,9 +488,10 @@ private extension RepoBarCLI {
         repobarcli - list repositories by activity, issues, PRs, stars
 
         Usage:
-          repobarcli [list] [--limit N] [--json]
+          repobarcli [repos] [--limit N] [--json]
           repobarcli login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
           repobarcli logout
+          repobarcli status [--json]
 
         Options:
           --limit N   Max repositories to fetch (default: all accessible)
