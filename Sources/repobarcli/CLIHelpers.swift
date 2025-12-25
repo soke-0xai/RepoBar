@@ -10,7 +10,7 @@ protocol CommanderRunnableCommand: ParsableCommand {
 extension ParsableCommand {
     static func descriptor() -> CommandDescriptor {
         let description = Self.commandDescription
-        let instance = Self.init()
+        let instance = Self()
         let signature = CommandSignature.describe(instance).flattened()
         let name = description.commandName ?? String(describing: Self.self).lowercased()
         let subcommands = description.subcommands.map { $0.descriptor() }
@@ -22,7 +22,8 @@ extension ParsableCommand {
             discussion: description.discussion,
             signature: signature,
             subcommands: subcommands,
-            defaultSubcommandName: defaultName)
+            defaultSubcommandName: defaultName
+        )
     }
 }
 
@@ -41,8 +42,10 @@ extension ParsedValues {
 }
 
 struct OutputOptions: CommanderParsable, Sendable {
-    @Flag(names: [.customLong("json"), .customLong("json-output"), .short("j")],
-          help: "Output JSON instead of the formatted table")
+    @Flag(
+        names: [.customLong("json"), .customLong("json-output"), .short("j")],
+        help: "Output JSON instead of the formatted table"
+    )
     var jsonOutput: Bool = false
 
     @Flag(names: [.customLong("no-color")], help: "Disable color output")
@@ -51,12 +54,12 @@ struct OutputOptions: CommanderParsable, Sendable {
     init() {}
 
     mutating func bind(_ values: ParsedValues) {
-        jsonOutput = values.flag("jsonOutput")
-        noColor = values.flag("noColor")
+        self.jsonOutput = values.flag("jsonOutput")
+        self.noColor = values.flag("noColor")
     }
 
     var useColor: Bool {
-        jsonOutput == false && noColor == false && Ansi.supportsColor
+        self.jsonOutput == false && self.noColor == false && Ansi.supportsColor
     }
 }
 
@@ -96,11 +99,11 @@ enum CLIError: Error {
     var message: String {
         switch self {
         case .notAuthenticated:
-            return "No stored login. Run `repobarcli login` first."
+            "No stored login. Run `repobarcli login` first."
         case .openFailed:
-            return "Failed to open the browser."
+            "Failed to open the browser."
         case let .unknownCommand(command):
-            return "Unknown command: \(command)"
+            "Unknown command: \(command)"
         }
     }
 }
@@ -207,10 +210,9 @@ enum HelpTarget: String {
 }
 
 func printHelp(_ target: HelpTarget) {
-    let text: String
-    switch target {
+    let text = switch target {
     case .root:
-        text = """
+        """
         repobarcli - list repositories by activity, issues, PRs, stars
 
         Usage:
@@ -227,7 +229,7 @@ func printHelp(_ target: HelpTarget) {
           -h, --help   Show help
         """
     case .repos:
-        text = """
+        """
         repobarcli repos - list repositories
 
         Usage:
@@ -240,21 +242,21 @@ func printHelp(_ target: HelpTarget) {
           --no-color   Disable color output
         """
     case .login:
-        text = """
+        """
         repobarcli login - sign in via browser OAuth
 
         Usage:
           repobarcli login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
         """
     case .logout:
-        text = """
+        """
         repobarcli logout - clear stored credentials
 
         Usage:
           repobarcli logout
         """
     case .status:
-        text = """
+        """
         repobarcli status - show login state
 
         Usage:

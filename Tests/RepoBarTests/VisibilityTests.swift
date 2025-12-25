@@ -1,6 +1,6 @@
 import Foundation
-import RepoBarCore
 @testable import RepoBar
+import RepoBarCore
 import Testing
 
 struct VisibilityTests {

@@ -14,9 +14,10 @@ struct RepoBarRoot: ParsableCommand {
                 ReposCommand.self,
                 LoginCommand.self,
                 LogoutCommand.self,
-                StatusCommand.self,
+                StatusCommand.self
             ],
-            defaultSubcommand: ReposCommand.self)
+            defaultSubcommand: ReposCommand.self
+        )
     }
 }
 
@@ -36,13 +37,14 @@ struct ReposCommand: CommanderRunnableCommand {
     static var commandDescription: CommandDescription {
         CommandDescription(
             commandName: commandName,
-            abstract: "List repositories by activity, issues, PRs, and stars")
+            abstract: "List repositories by activity, issues, PRs, and stars"
+        )
     }
 
     mutating func bind(_ values: ParsedValues) throws {
-        output.bind(values)
-        limit = try values.decodeOption("limit")
-        sort = try values.decodeOption("sort") ?? .activity
+        self.output.bind(values)
+        self.limit = try values.decodeOption("limit")
+        self.sort = try values.decodeOption("sort") ?? .activity
     }
 
     mutating func run() async throws {
@@ -50,7 +52,7 @@ struct ReposCommand: CommanderRunnableCommand {
             throw ValidationError("--limit must be greater than 0")
         }
 
-        if output.jsonOutput == false, output.useColor {
+        if self.output.jsonOutput == false, self.output.useColor {
             print("RepoBar CLI")
         }
 
@@ -76,10 +78,10 @@ struct ReposCommand: CommanderRunnableCommand {
         let rows = prepareRows(repos: repos)
         let sorted = sortRows(rows, sortKey: sort)
 
-        if output.jsonOutput {
+        if self.output.jsonOutput {
             try renderJSON(sorted)
         } else {
-            renderTable(sorted, useColor: output.useColor)
+            renderTable(sorted, useColor: self.output.useColor)
         }
     }
 }
@@ -103,28 +105,28 @@ struct LoginCommand: CommanderRunnableCommand {
     static var commandDescription: CommandDescription {
         CommandDescription(
             commandName: commandName,
-            abstract: "Sign in via browser-based OAuth")
+            abstract: "Sign in via browser-based OAuth"
+        )
     }
 
     mutating func bind(_ values: ParsedValues) throws {
-        host = try values.decodeOption("host")
-        clientID = try values.decodeOption("clientID")
-        clientSecret = try values.decodeOption("clientSecret")
-        loopbackPort = try values.decodeOption("loopbackPort")
+        self.host = try values.decodeOption("host")
+        self.clientID = try values.decodeOption("clientID")
+        self.clientSecret = try values.decodeOption("clientSecret")
+        self.loopbackPort = try values.decodeOption("loopbackPort")
     }
 
     mutating func run() async throws {
-        if let loopbackPort, (loopbackPort <= 0 || loopbackPort >= 65536) {
+        if let loopbackPort, loopbackPort <= 0 || loopbackPort >= 65536 {
             throw ValidationError("--loopback-port must be between 1 and 65535")
         }
 
         let store = SettingsStore()
         var settings = store.load()
-        let rawHost: URL
-        if let host {
-            rawHost = try parseHost(host)
+        let rawHost: URL = if let host {
+            try parseHost(host)
         } else {
-            rawHost = settings.enterpriseHost ?? settings.githubHost
+            settings.enterpriseHost ?? settings.githubHost
         }
         let normalizedHost = try OAuthLoginFlow.normalizeHost(rawHost)
 
@@ -132,8 +134,8 @@ struct LoginCommand: CommanderRunnableCommand {
             try openURL(url)
         }
         _ = try await flow.login(
-            clientID: clientID ?? RepoBarAuthDefaults.clientID,
-            clientSecret: clientSecret ?? RepoBarAuthDefaults.clientSecret,
+            clientID: self.clientID ?? RepoBarAuthDefaults.clientID,
+            clientSecret: self.clientSecret ?? RepoBarAuthDefaults.clientSecret,
             host: normalizedHost,
             loopbackPort: loopbackPort ?? settings.loopbackPort
         )
@@ -158,7 +160,8 @@ struct LogoutCommand: CommanderRunnableCommand {
     static var commandDescription: CommandDescription {
         CommandDescription(
             commandName: commandName,
-            abstract: "Clear stored credentials")
+            abstract: "Clear stored credentials"
+        )
     }
 
     mutating func bind(_: ParsedValues) throws {}
@@ -179,17 +182,18 @@ struct StatusCommand: CommanderRunnableCommand {
     static var commandDescription: CommandDescription {
         CommandDescription(
             commandName: commandName,
-            abstract: "Show login state")
+            abstract: "Show login state"
+        )
     }
 
     mutating func bind(_ values: ParsedValues) throws {
-        output.bind(values)
+        self.output.bind(values)
     }
 
     mutating func run() async throws {
         let tokens = try TokenStore.shared.load()
         guard let tokens else {
-            if output.jsonOutput {
+            if self.output.jsonOutput {
                 let output = StatusOutput(
                     authenticated: false,
                     host: nil,
@@ -214,7 +218,7 @@ struct StatusCommand: CommanderRunnableCommand {
         let expired = expiresAt.map { $0 <= now }
         let expiresIn = expiresAt.map { RelativeFormatter.string(from: $0, relativeTo: now) }
 
-        if output.jsonOutput {
+        if self.output.jsonOutput {
             let output = StatusOutput(
                 authenticated: true,
                 host: host,

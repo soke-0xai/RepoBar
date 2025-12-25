@@ -100,7 +100,7 @@ func renderTable(_ rows: [RepoRow], useColor: Bool) {
         padLeft(pullsHeader, to: pullsWidth),
         padLeft(starsHeader, to: starsWidth),
         repoHeader,
-        eventHeader,
+        eventHeader
     ].joined(separator: "  ")
     print(useColor ? Ansi.bold.wrap(header) : header)
 
@@ -125,7 +125,7 @@ func renderTable(_ rows: [RepoRow], useColor: Bool) {
             coloredPulls,
             coloredStars,
             coloredRepo,
-            coloredLine,
+            coloredLine
         ].joined(separator: "  ")
         print(output)
 

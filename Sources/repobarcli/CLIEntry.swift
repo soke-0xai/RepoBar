@@ -6,7 +6,7 @@ import RepoBarCore
 @MainActor
 enum RepoBarCLI {
     static func main() async {
-        let argv = normalizeArguments(CommandLine.arguments)
+        let argv = self.normalizeArguments(CommandLine.arguments)
         if let helpTarget = HelpTarget.from(argv: argv) {
             printHelp(helpTarget)
             return
@@ -18,7 +18,7 @@ enum RepoBarCLI {
             var command = try makeCommand(from: invocation)
             try await command.run()
         } catch {
-            handleError(error)
+            self.handleError(error)
         }
     }
 
@@ -49,20 +49,19 @@ enum RepoBarCLI {
         ReposCommand.commandName: ReposCommand.self,
         LoginCommand.commandName: LoginCommand.self,
         LogoutCommand.commandName: LogoutCommand.self,
-        StatusCommand.commandName: StatusCommand.self,
+        StatusCommand.commandName: StatusCommand.self
     ]
 
     private static func handleError(_ error: Error) {
-        let message: String
-        switch error {
+        let message: String = switch error {
         case let error as CLIError:
-            message = error.message
+            error.message
         case let error as CommanderProgramError:
-            message = error.description
+            error.description
         case let error as ValidationError:
-            message = error.description
+            error.description
         default:
-            message = error.userFacingMessage
+            error.userFacingMessage
         }
         printError(message)
         exit(1)

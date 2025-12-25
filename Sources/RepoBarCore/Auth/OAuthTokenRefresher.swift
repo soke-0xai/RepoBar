@@ -33,7 +33,7 @@ public struct OAuthTokenRefresher: Sendable {
             refreshToken: decoded.refreshToken ?? tokens.refreshToken,
             expiresAt: expires
         )
-        try tokenStore.save(tokens: tokens)
+        try self.tokenStore.save(tokens: tokens)
         return tokens
     }
 }

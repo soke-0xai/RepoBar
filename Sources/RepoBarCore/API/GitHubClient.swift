@@ -447,7 +447,7 @@ public actor GitHubClient {
         return collected
             .filter { ($0.state ?? "active") == "active" }
             .filter { $0.role == "admin" }
-            .map { $0.organization.login }
+            .map(\.organization.login)
     }
 
     private func repoDetails(owner: String, name: String) async throws -> RepoItem {

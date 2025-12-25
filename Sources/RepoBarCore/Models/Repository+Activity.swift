@@ -12,13 +12,13 @@ public extension Repository {
     var activityDate: Date? {
         switch (self.latestActivity?.date, self.pushedAt) {
         case let (left?, right?):
-            return max(left, right)
+            max(left, right)
         case let (left?, nil):
-            return left
+            left
         case let (nil, right?):
-            return right
+            right
         default:
-            return nil
+            nil
         }
     }
 

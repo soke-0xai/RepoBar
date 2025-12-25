@@ -69,7 +69,7 @@ public final class LoopbackServer {
     }
 
     /// Pure parser to ease testing.
-    nonisolated public static func parse(request: String) -> (code: String, state: String)? {
+    public nonisolated static func parse(request: String) -> (code: String, state: String)? {
         guard let firstLine = request.components(separatedBy: "\r\n").first,
               let range = firstLine.range(of: "GET ") else { return nil }
         let pathPart = firstLine[range.upperBound...].split(separator: " ").first ?? "" as Substring
