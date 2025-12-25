@@ -14,7 +14,7 @@ public enum RepositorySort {
         _ repos: [Repository],
         sortKey: RepositorySortKey = .activity
     ) -> [Repository] {
-        repos.sorted { isOrderedBefore($0, $1, sortKey: sortKey) }
+        repos.sorted { self.isOrderedBefore($0, $1, sortKey: sortKey) }
     }
 
     public static func isOrderedBefore(

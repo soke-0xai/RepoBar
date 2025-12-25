@@ -93,7 +93,7 @@ struct ReposCommand: CommanderRunnableCommand {
             guard let date = repo.activityDate else { return false }
             return date >= cutoff
         }
-        let sorted = RepositorySort.sorted(filtered, sortKey: sort)
+        let sorted = RepositorySort.sorted(filtered, sortKey: self.sort)
         let rows = prepareRows(repos: sorted, now: now)
 
         let baseHost = settings.enterpriseHost ?? settings.githubHost

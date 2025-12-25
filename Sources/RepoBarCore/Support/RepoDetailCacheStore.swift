@@ -36,9 +36,9 @@ struct RepoDetailCacheStore {
         guard let url = cacheFileURL(apiHost: apiHost, owner: owner, name: name) else { return nil }
         guard let data = try? Data(contentsOf: url) else { return nil }
         do {
-            return try decoder.decode(RepoDetailCache.self, from: data)
+            return try self.decoder.decode(RepoDetailCache.self, from: data)
         } catch {
-            try? fileManager.removeItem(at: url)
+            try? self.fileManager.removeItem(at: url)
             return nil
         }
     }
@@ -47,7 +47,7 @@ struct RepoDetailCacheStore {
         guard let url = cacheFileURL(apiHost: apiHost, owner: owner, name: name) else { return }
         let folder = url.deletingLastPathComponent()
         do {
-            try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
+            try self.fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
             let data = try encoder.encode(cache)
             try data.write(to: url, options: .atomic)
         } catch {
@@ -57,7 +57,7 @@ struct RepoDetailCacheStore {
 
     func clear() {
         guard let baseURL else { return }
-        try? fileManager.removeItem(at: baseURL)
+        try? self.fileManager.removeItem(at: baseURL)
     }
 
     private func cacheFileURL(apiHost: URL, owner: String, name: String) -> URL? {
