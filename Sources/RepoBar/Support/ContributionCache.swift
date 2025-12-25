@@ -1,4 +1,5 @@
 import Foundation
+import RepoBarCore
 
 struct ContributionCache: Codable {
     let username: String

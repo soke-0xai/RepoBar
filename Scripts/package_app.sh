@@ -12,12 +12,20 @@ fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 
 log "==> Building ${APP_NAME} (${CONFIGURATION})"
 swift build -c "${CONFIGURATION}"
+swift build -c "${CONFIGURATION}" --product repobarcli
 
 APP_BUNDLE="${ROOT_DIR}/.build/${CONFIGURATION}/${APP_NAME}.app"
 if [ -d "${APP_BUNDLE}" ]; then
   log "Built app at ${APP_BUNDLE}"
 else
   fail "App bundle not found (SwiftPM may not have produced a bundle)."
+fi
+
+CLI_BINARY="${ROOT_DIR}/.build/${CONFIGURATION}/repobarcli"
+if [ -d "${APP_BUNDLE}" ] && [ -f "${CLI_BINARY}" ]; then
+  log "==> Installing repobarcli"
+  cp "${CLI_BINARY}" "${APP_BUNDLE}/Contents/MacOS/repobarcli"
+  chmod +x "${APP_BUNDLE}/Contents/MacOS/repobarcli" || true
 fi
 
 # Override Info.plist with packaged settings (LSUIElement, URL scheme, versions).

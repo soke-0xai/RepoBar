@@ -14,14 +14,22 @@ let package = Package(
         .package(url: "https://github.com/apollographql/apollo-ios", from: "2.0.3"),
     ],
     targets: [
+        .target(
+            name: "RepoBarCore",
+            dependencies: [
+                .product(name: "Apollo", package: "apollo-ios"),
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+            ]),
         .executableTarget(
             name: "RepoBar",
             dependencies: [
+                "RepoBarCore",
                 .product(name: "Sparkle", package: "Sparkle"),
                 .product(name: "MenuBarExtraAccess", package: "MenuBarExtraAccess"),
                 .product(name: "Algorithms", package: "swift-algorithms"),
                 .product(name: "AppAuth", package: "AppAuth-iOS"),
-                .product(name: "Apollo", package: "apollo-ios"),
             ],
             exclude: ["Resources/Info.plist"],
             swiftSettings: [
@@ -30,10 +38,18 @@ let package = Package(
                     "-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist",
                     "-Xlinker", "Sources/RepoBar/Resources/Info.plist",
                 ]),
+                ]),
+        .executableTarget(
+            name: "repobarcli",
+            dependencies: [
+                "RepoBarCore",
+            ],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
             ]),
         .testTarget(
             name: "RepoBarTests",
-            dependencies: ["RepoBar"],
+            dependencies: ["RepoBar", "RepoBarCore"],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
                 .enableExperimentalFeature("SwiftTesting"),

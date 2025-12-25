@@ -60,6 +60,13 @@ done
 log "Signing main binary"
 codesign --force --options runtime --timestamp --entitlements "$TMP_ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/RepoBar"
 
+log "Signing auxiliary binaries"
+for bin in "$APP_PATH/Contents/MacOS/"*; do
+  if [ -f "$bin" ] && [ "$bin" != "$APP_PATH/Contents/MacOS/RepoBar" ]; then
+    codesign --force --options runtime --timestamp --entitlements "$TMP_ENTITLEMENTS" --sign "$IDENTITY" "$bin"
+  fi
+done
+
 log "Signing app bundle"
 codesign --force --options runtime --timestamp --entitlements "$TMP_ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
 

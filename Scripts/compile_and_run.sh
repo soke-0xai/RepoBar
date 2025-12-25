@@ -34,6 +34,7 @@ kill_existing
 
 log "==> swift build"
 swift build -q
+swift build -q --product repobarcli
 
 log "==> swift test"
 swift test -q
@@ -44,6 +45,13 @@ APP_BUNDLE="${ROOT_DIR}/.build/debug/${APP_NAME}.app"
 if [ -d "${APP_BUNDLE}" ] && [ -f "${PLIST_TEMPLATE}" ]; then
   log "==> Installing custom Info.plist"
   cp "${PLIST_TEMPLATE}" "${APP_BUNDLE}/Contents/Info.plist"
+fi
+
+CLI_BINARY="${ROOT_DIR}/.build/debug/repobarcli"
+if [ -d "${APP_BUNDLE}" ] && [ -f "${CLI_BINARY}" ]; then
+  log "==> Installing repobarcli"
+  cp "${CLI_BINARY}" "${APP_BUNDLE}/Contents/MacOS/repobarcli"
+  chmod +x "${APP_BUNDLE}/Contents/MacOS/repobarcli" || true
 fi
 
 log "==> Codesigning debug build"

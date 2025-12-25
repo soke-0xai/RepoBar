@@ -1,4 +1,5 @@
 import Foundation
+import RepoBarCore
 @testable import RepoBar
 import Testing
 

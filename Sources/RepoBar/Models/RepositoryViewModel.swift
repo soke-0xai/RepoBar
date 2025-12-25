@@ -1,4 +1,5 @@
 import Foundation
+import RepoBarCore
 
 struct RepositoryViewModel: Identifiable, Equatable {
     let id: String
@@ -47,13 +48,5 @@ struct RepositoryViewModel: Identifiable, Equatable {
             self.activityLine = nil
             self.activityURL = nil
         }
-    }
-}
-
-enum RelativeFormatter {
-    static func string(from date: Date, relativeTo now: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .short
-        return formatter.localizedString(for: date, relativeTo: now)
     }
 }

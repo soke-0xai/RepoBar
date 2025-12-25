@@ -1,5 +1,6 @@
 import AppKit
 import MenuBarExtraAccess
+import RepoBarCore
 import SwiftUI
 
 @main
@@ -110,11 +111,11 @@ final class AppState: ObservableObject {
     private let settingsStore = SettingsStore()
 
     // Default GitHub App values for convenience login from the main window.
-    private let defaultClientID = "Iv23liGm2arUyotWSjwJ"
-    private let defaultClientSecret = "9693b9928c9efd224838e096a147822680983e10"
-    private let defaultLoopbackPort: Int = 53682
-    private let defaultGitHubHost = URL(string: "https://github.com")!
-    private let defaultAPIHost = URL(string: "https://api.github.com")!
+    private let defaultClientID = RepoBarAuthDefaults.clientID
+    private let defaultClientSecret = RepoBarAuthDefaults.clientSecret
+    private let defaultLoopbackPort = RepoBarAuthDefaults.loopbackPort
+    private let defaultGitHubHost = RepoBarAuthDefaults.githubHost
+    private let defaultAPIHost = RepoBarAuthDefaults.apiHost
 
     init() {
         self.session.settings = self.settingsStore.load()
@@ -368,64 +369,4 @@ enum AccountState: Equatable {
     case loggedOut
     case loggingIn
     case loggedIn(UserIdentity)
-}
-
-struct UserIdentity: Equatable {
-    let username: String
-    let host: URL
-}
-
-struct UserSettings: Equatable, Codable {
-    var showContributionHeader = true
-    var repoDisplayLimit: Int = 5
-    var refreshInterval: RefreshInterval = .fiveMinutes
-    var launchAtLogin = false
-    var showHeatmap = true
-    var heatmapSpan: HeatmapSpan = .threeMonths
-    var cardDensity: CardDensity = .comfortable
-    var accentTone: AccentTone = .githubGreen
-    var debugPaneEnabled: Bool = false
-    var diagnosticsEnabled: Bool = false
-    var githubHost: URL = .init(string: "https://github.com")!
-    var enterpriseHost: URL?
-    var loopbackPort: Int = 53682
-    var pinnedRepositories: [String] = [] // owner/name
-    var hiddenRepositories: [String] = [] // owner/name
-}
-
-enum RefreshInterval: CaseIterable, Equatable, Codable {
-    case oneMinute, twoMinutes, fiveMinutes, fifteenMinutes
-
-    var seconds: TimeInterval {
-        switch self {
-        case .oneMinute: 60
-        case .twoMinutes: 120
-        case .fiveMinutes: 300
-        case .fifteenMinutes: 900
-        }
-    }
-}
-
-enum CardDensity: String, CaseIterable, Equatable, Codable {
-    case comfortable
-    case compact
-
-    var label: String {
-        switch self {
-        case .comfortable: "Comfortable"
-        case .compact: "Compact"
-        }
-    }
-}
-
-enum AccentTone: String, CaseIterable, Equatable, Codable {
-    case system
-    case githubGreen
-
-    var label: String {
-        switch self {
-        case .system: "System accent"
-        case .githubGreen: "GitHub greens"
-        }
-    }
 }

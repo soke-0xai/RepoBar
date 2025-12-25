@@ -1,5 +1,6 @@
 import AppKit
 import MenuBarExtraAccess
+import RepoBarCore
 import SwiftUI
 
 #if !SWIFT_PACKAGE

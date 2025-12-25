@@ -1,4 +1,5 @@
 import AppKit
+import RepoBarCore
 import SwiftUI
 
 struct SettingsView: View {

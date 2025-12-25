@@ -1,5 +1,6 @@
 import Foundation
 @testable import RepoBar
+@testable import RepoBarCore
 import Testing
 
 @MainActor

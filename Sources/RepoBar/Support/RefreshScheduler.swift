@@ -1,4 +1,5 @@
 import Foundation
+import RepoBarCore
 
 @MainActor
 final class RefreshScheduler: ObservableObject {

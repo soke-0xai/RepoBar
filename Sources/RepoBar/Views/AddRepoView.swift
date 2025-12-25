@@ -1,3 +1,4 @@
+import RepoBarCore
 import SwiftUI
 
 struct AddRepoView: View {
