@@ -28,6 +28,9 @@ struct ReposCommand: CommanderRunnableCommand {
     @Option(name: .customLong("limit"), help: "Max repositories to fetch (default: all accessible)")
     var limit: Int?
 
+    @Option(name: .customLong("age"), help: "Max age in days for repo activity (default: 365)")
+    var age: Int = 365
+
     @Option(name: .customLong("sort"), help: "Sort by activity, issues, prs, stars, repo, or event")
     var sort: SortKey = .activity
 
@@ -44,12 +47,16 @@ struct ReposCommand: CommanderRunnableCommand {
     mutating func bind(_ values: ParsedValues) throws {
         self.output.bind(values)
         self.limit = try values.decodeOption("limit")
+        self.age = try values.decodeOption("age") ?? 365
         self.sort = try values.decodeOption("sort") ?? .activity
     }
 
     mutating func run() async throws {
         if let limit, limit <= 0 {
             throw ValidationError("--limit must be greater than 0")
+        }
+        if self.age <= 0 {
+            throw ValidationError("--age must be greater than 0")
         }
 
         if self.output.jsonOutput == false, self.output.useColor {
@@ -75,8 +82,15 @@ struct ReposCommand: CommanderRunnableCommand {
         }
 
         let repos = try await client.activityRepositories(limit: limit)
-        let rows = prepareRows(repos: repos)
-        let sorted = sortRows(rows, sortKey: sort)
+        let now = Date()
+        let rows = prepareRows(repos: repos, now: now)
+        let cutoff = Calendar.current.date(byAdding: .day, value: -self.age, to: now)
+        let filtered = rows.filter { row in
+            guard let cutoff else { return false }
+            guard let date = row.activityDate else { return false }
+            return date >= cutoff
+        }
+        let sorted = sortRows(filtered, sortKey: sort)
 
         if self.output.jsonOutput {
             try renderJSON(sorted)
