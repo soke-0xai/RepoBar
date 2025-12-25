@@ -21,6 +21,8 @@ public actor GitHubClient {
     private var prefetchedRepos: [Repository] = []
     private var prefetchedReposExpiry: Date?
     private var latestRestRateLimit: RateLimitSnapshot?
+    private var repoDetailCache: [String: RepoDetailCache] = [:]
+    private static let detailRefreshInterval: TimeInterval = 60 * 60
 
     public init() {}
 
@@ -135,37 +137,130 @@ public actor GitHubClient {
             )
         }
 
+        let now = Date()
+        let cacheKey = "\(details.owner.login)/\(details.name)"
+        var cache = self.repoDetailCache[cacheKey] ?? RepoDetailCache()
+        let cachedOpenPulls = cache.openPulls ?? 0
+        let cachedCiDetails = cache.ciDetails ?? CIStatusDetails(status: .unknown, runCount: nil)
+        let cachedActivity = cache.latestActivity
+        let cachedTraffic = cache.traffic
+        let cachedHeatmap = cache.heatmap ?? []
+        let cachedRelease = cache.latestRelease
+
+        let shouldFetchPulls = self.shouldFetch(cache.openPullsFetchedAt, now: now)
+        let shouldFetchCI = self.shouldFetch(cache.ciFetchedAt, now: now)
+        let shouldFetchActivity = self.shouldFetch(cache.activityFetchedAt, now: now)
+        let shouldFetchTraffic = self.shouldFetch(cache.trafficFetchedAt, now: now)
+        let shouldFetchHeatmap = self.shouldFetch(cache.heatmapFetchedAt, now: now)
+        let shouldFetchRelease = self.shouldFetch(cache.releaseFetchedAt, now: now)
+
         // Run all expensive lookups in parallel; individual failures are folded into the accumulator.
-        async let openPullsResult: Result<Int, Error> = self.capture {
-            try await self.openPullRequestCount(owner: owner, name: name)
+        async let openPullsResult: Result<Int, Error> = shouldFetchPulls
+            ? self.capture { try await self.openPullRequestCount(owner: owner, name: name) }
+            : .success(cachedOpenPulls)
+        async let ciResult: Result<CIStatusDetails, Error> = shouldFetchCI
+            ? self.capture { try await self.ciStatus(owner: owner, name: name) }
+            : .success(cachedCiDetails)
+        async let activityResult: Result<ActivityEvent?, Error> = shouldFetchActivity
+            ? self.capture { try await self.latestActivity(owner: owner, name: name) }
+            : .success(cachedActivity)
+        async let trafficResult: Result<TrafficStats?, Error> = shouldFetchTraffic
+            ? self.capture { try await self.trafficStats(owner: owner, name: name) as TrafficStats? }
+            : .success(cachedTraffic)
+        async let heatmapResult: Result<[HeatmapCell], Error> = shouldFetchHeatmap
+            ? self.capture { try await self.commitHeatmap(owner: owner, name: name) }
+            : .success(cachedHeatmap)
+        async let releaseResult: Result<Release?, Error> = shouldFetchRelease
+            ? self.capture { try await self.latestReleaseAny(owner: owner, name: name) }
+            : .success(cachedRelease)
+
+        let openPulls: Int
+        switch await openPullsResult {
+        case let .success(value):
+            openPulls = value
+            if shouldFetchPulls {
+                cache.openPulls = value
+                cache.openPullsFetchedAt = now
+            }
+        case let .failure(error):
+            accumulator.absorb(error)
+            openPulls = cache.openPulls ?? 0
         }
-        async let ciResult: Result<CIStatusDetails, Error> = self.capture { try await self.ciStatus(owner: owner, name: name) }
-        async let activityResult: Result<ActivityEvent?, Error> = self.capture { try await self.latestActivity(
-            owner: owner,
-            name: name
-        ) }
-        async let trafficResult: Result<TrafficStats, Error> = self.capture { try await self.trafficStats(
-            owner: owner,
-            name: name
-        ) }
-        async let heatmapResult: Result<[HeatmapCell], Error> = self.capture { try await self.commitHeatmap(
-            owner: owner,
-            name: name
-        ) }
-        let openPulls = await self.value(from: openPullsResult, into: &accumulator) ?? 0
         let issues = max(details.openIssuesCount - openPulls, 0)
-        let releaseREST: Release? = try? await self.latestReleaseAny(owner: owner, name: name)
-        let ciDetails = await self.value(from: ciResult, into: &accumulator)
+
+        let ciDetails: CIStatusDetails?
+        switch await ciResult {
+        case let .success(value):
+            ciDetails = value
+            if shouldFetchCI {
+                cache.ciDetails = value
+                cache.ciFetchedAt = now
+            }
+        case let .failure(error):
+            accumulator.absorb(error)
+            ciDetails = cache.ciDetails
+        }
         let ci = ciDetails?.status ?? .unknown
         let ciRunCount = ciDetails?.runCount
-        let activity: ActivityEvent? = await self.value(from: activityResult, into: &accumulator) ?? nil // swiftlint:disable:this redundant_nil_coalescing
-        let traffic = await self.value(from: trafficResult, into: &accumulator)
-        let heatmap = await self.value(from: heatmapResult, into: &accumulator) ?? []
+
+        let activity: ActivityEvent?
+        switch await activityResult {
+        case let .success(value):
+            activity = value
+            if shouldFetchActivity {
+                cache.latestActivity = value
+                cache.activityFetchedAt = now
+            }
+        case let .failure(error):
+            accumulator.absorb(error)
+            activity = cache.latestActivity
+        }
+
+        let traffic: TrafficStats?
+        switch await trafficResult {
+        case let .success(value):
+            traffic = value
+            if shouldFetchTraffic {
+                cache.traffic = value
+                cache.trafficFetchedAt = now
+            }
+        case let .failure(error):
+            accumulator.absorb(error)
+            traffic = cache.traffic
+        }
+
+        let heatmap: [HeatmapCell]
+        switch await heatmapResult {
+        case let .success(value):
+            heatmap = value
+            if shouldFetchHeatmap {
+                cache.heatmap = value
+                cache.heatmapFetchedAt = now
+            }
+        case let .failure(error):
+            accumulator.absorb(error)
+            heatmap = cache.heatmap ?? []
+        }
+
+        let releaseREST: Release?
+        switch await releaseResult {
+        case let .success(value):
+            releaseREST = value
+            if shouldFetchRelease {
+                cache.latestRelease = value
+                cache.releaseFetchedAt = now
+            }
+        case let .failure(error):
+            accumulator.absorb(error)
+            releaseREST = cache.latestRelease
+        }
 
         let finalIssues = issues
         let finalPulls = openPulls
         let finalRelease = releaseREST
         let finalActivity: ActivityEvent? = activity
+
+        self.repoDetailCache[cacheKey] = cache
 
         return Repository(
             id: "\(details.id)",
@@ -772,6 +867,26 @@ public actor GitHubClient {
         }
         return nil
     }
+
+    private func shouldFetch(_ lastFetched: Date?, now: Date) -> Bool {
+        guard let lastFetched else { return true }
+        return now.timeIntervalSince(lastFetched) >= Self.detailRefreshInterval
+    }
+}
+
+private struct RepoDetailCache: Sendable {
+    var openPulls: Int?
+    var openPullsFetchedAt: Date?
+    var ciDetails: CIStatusDetails?
+    var ciFetchedAt: Date?
+    var latestActivity: ActivityEvent?
+    var activityFetchedAt: Date?
+    var traffic: TrafficStats?
+    var trafficFetchedAt: Date?
+    var heatmap: [HeatmapCell]?
+    var heatmapFetchedAt: Date?
+    var latestRelease: Release?
+    var releaseFetchedAt: Date?
 }
 
 private struct InstallationReposResponse: Decodable {
