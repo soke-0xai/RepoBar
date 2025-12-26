@@ -6,6 +6,19 @@ APP_PATH="${1:-$ROOT_DIR/.build/debug/RepoBar.app}"
 DEFAULT_IDENTITY="${CODE_SIGN_IDENTITY:-${CODESIGN_IDENTITY:-}}"
 IDENTITY="${2:-${CODESIGN_IDENTITY:-$DEFAULT_IDENTITY}}"
 
+log() { printf '%s\n' "[$(date '+%H:%M:%S')] $*"; }
+
+# Load signing defaults from Config/Local.xcconfig if present (xcconfig syntax)
+if [ -f "${ROOT_DIR}/Config/Local.xcconfig" ]; then
+  while IFS='=' read -r rawKey rawValue; do
+    key="$(printf '%s' "$rawKey" | sed 's,//.*$,,' | xargs)"
+    value="$(printf '%s' "$rawValue" | sed 's,//.*$,,' | xargs)"
+    case "$key" in
+      DEVELOPMENT_TEAM) DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-$value}" ;;
+    esac
+  done < <(grep -v '^[[:space:]]*//' "${ROOT_DIR}/Config/Local.xcconfig")
+fi
+
 if [ -z "$IDENTITY" ]; then
   log "No signing identity provided; skipping codesign for $APP_PATH"
   exit 0
@@ -13,16 +26,33 @@ fi
 ENTITLEMENTS="$ROOT_DIR/RepoBar.entitlements"
 TMP_ENTITLEMENTS="/tmp/RepoBar_entitlements.plist"
 
-log() { printf '%s\n' "[$(date '+%H:%M:%S')] $*"; }
-
 if [ ! -d "$APP_PATH" ]; then
   log "App bundle not found: $APP_PATH"
   exit 1
 fi
 
+extract_team_id() {
+  local identity="$1"
+  if [[ "$identity" =~ \\(([A-Z0-9]{10})\\)$ ]]; then
+    printf '%s' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  return 1
+}
+
 # Prepare entitlements (enable hardened runtime, Sparkle XPC exceptions)
 if [ -f "$ENTITLEMENTS" ]; then
-  sed "s/\$(PRODUCT_BUNDLE_IDENTIFIER)/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Contents/Info.plist" 2>/dev/null || echo 'com.steipete.repobar')/" \
+  bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Contents/Info.plist" 2>/dev/null || echo 'com.steipete.repobar')"
+  team_id="${DEVELOPMENT_TEAM:-}"
+  if [ -z "$team_id" ]; then
+    team_id="$(extract_team_id "$IDENTITY" || true)"
+  fi
+  app_id_prefix=""
+  if [ -n "$team_id" ]; then
+    app_id_prefix="${team_id}."
+  fi
+  sed -e "s/\$(PRODUCT_BUNDLE_IDENTIFIER)/${bundle_id}/g" \
+    -e "s/\$(AppIdentifierPrefix)/${app_id_prefix}/g" \
     "$ENTITLEMENTS" > "$TMP_ENTITLEMENTS"
 else
   cat > "$TMP_ENTITLEMENTS" <<'PLIST'

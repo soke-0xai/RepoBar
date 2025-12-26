@@ -9,7 +9,7 @@
     "docs:list": "node Scripts/docs-list.mjs",
     "test": "swift test",
     "build": "swift build",
-    "repobarcli": "swift build --product repobarcli && .build/debug/repobarcli",
+    "repobarcli": "swift build --product repobarcli && ./Scripts/codesign_cli.sh .build/debug/repobarcli && .build/debug/repobarcli",
     "start": "./Scripts/compile_and_run.sh",
     "restart": "pnpm start",
     "stop": "pkill -f \".build/debug/RepoBar\" || true",
