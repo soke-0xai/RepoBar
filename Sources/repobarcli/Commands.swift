@@ -37,7 +37,7 @@ struct ReposCommand: CommanderRunnableCommand {
     @Flag(names: [.customLong("release")], help: "Include latest release tag and date")
     var includeRelease: Bool = false
 
-    @Flag(names: [.customLong("event")], help: "Include activity event column")
+    @Flag(names: [.customLong("event")], help: "Show activity event column (hidden by default)")
     var includeEvent: Bool = false
 
     @Option(name: .customLong("sort"), help: "Sort by activity, issues, prs, stars, repo, or event")

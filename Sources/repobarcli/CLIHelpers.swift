@@ -232,7 +232,7 @@ func printHelp(_ target: HelpTarget) {
           --age DAYS   Only show repos with activity in the last N days (default: 365)
           --url        Include clickable URLs in output
           --release    Include latest release tag and date
-          --event      Include activity event column
+          --event      Show activity event column (hidden by default)
           --json       Output JSON instead of formatted table
           --sort KEY   Sort by activity, issues, prs, stars, repo, or event
           --no-color   Disable color output
@@ -250,7 +250,7 @@ func printHelp(_ target: HelpTarget) {
           --age DAYS   Only show repos with activity in the last N days (default: 365)
           --url        Include clickable URLs in output
           --release    Include latest release tag and date
-          --event      Include activity event column
+          --event      Show activity event column (hidden by default)
           --json       Output JSON instead of formatted table
           --sort KEY   Sort by activity, issues, prs, stars, repo, or event
           --no-color   Disable color output

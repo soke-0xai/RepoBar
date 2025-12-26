@@ -48,7 +48,8 @@ func renderTable(
     includeURL: Bool,
     includeRelease: Bool,
     includeEvent: Bool,
-    baseHost: URL
+    baseHost: URL,
+    now: Date = Date()
 ) {
     for line in tableLines(
         rows,
@@ -56,7 +57,8 @@ func renderTable(
         includeURL: includeURL,
         includeRelease: includeRelease,
         includeEvent: includeEvent,
-        baseHost: baseHost
+        baseHost: baseHost,
+        now: now
     ) {
         print(line)
     }
@@ -68,25 +70,27 @@ func tableLines(
     includeURL: Bool,
     includeRelease: Bool,
     includeEvent: Bool,
-    baseHost: URL
+    baseHost: URL,
+    now: Date = Date()
 ) -> [String] {
     let activityHeader = "ACTIVITY"
     let issuesHeader = "ISSUES"
     let pullsHeader = "PR"
     let starsHeader = "STAR"
+    let eventHeader = "EVENT"
     let releaseHeader = "REL"
     let releasedHeader = "RELEASED"
     let repoHeader = "REPO"
-    let eventHeader = "EVENT"
 
     let issuesWidth = max(issuesHeader.count, rows.map { String($0.repo.openIssues).count }.max() ?? 1)
     let pullsWidth = max(pullsHeader.count, rows.map { String($0.repo.openPulls).count }.max() ?? 1)
     let starsWidth = max(starsHeader.count, rows.map { String($0.repo.stars).count }.max() ?? 1)
     let activityWidth = max(activityHeader.count, rows.map(\.activityLabel.count).max() ?? 1)
+    let eventWidth = max(eventHeader.count, rows.map(\.activityLine.count).max() ?? 1)
     let releaseWidth = max(releaseHeader.count, rows.map { $0.repo.latestRelease?.tag.count ?? 1 }.max() ?? 1)
     let releasedWidth = max(
         releasedHeader.count,
-        rows.map { $0.repo.latestRelease.map { formatDateYYYYMMDD($0.publishedAt).count } ?? 1 }.max() ?? 1
+        rows.map { $0.repo.latestRelease.map { formatReleasedLabel($0.publishedAt, now: now).count } ?? 1 }.max() ?? 1
     )
 
     var headerParts = [
@@ -95,14 +99,14 @@ func tableLines(
         padLeft(pullsHeader, to: pullsWidth),
         padLeft(starsHeader, to: starsWidth)
     ]
-    headerParts.append(repoHeader)
+    if includeEvent {
+        headerParts.append(padRight(eventHeader, to: eventWidth))
+    }
     if includeRelease {
         headerParts.append(padRight(releaseHeader, to: releaseWidth))
         headerParts.append(padRight(releasedHeader, to: releasedWidth))
     }
-    if includeEvent {
-        headerParts.append(eventHeader)
-    }
+    headerParts.append(repoHeader)
 
     let header = headerParts.joined(separator: "  ")
 
@@ -114,8 +118,9 @@ func tableLines(
         let pulls = padLeft(String(row.repo.openPulls), to: pullsWidth)
         let stars = padLeft(String(row.repo.stars), to: starsWidth)
         let activity = padRight(row.activityLabel, to: activityWidth)
+        let event = padRight(row.activityLine.singleLine, to: eventWidth)
         let rel = padRight(row.repo.latestRelease?.tag ?? "-", to: releaseWidth)
-        let released = padRight(row.repo.latestRelease.map { formatDateYYYYMMDD($0.publishedAt) } ?? "-", to: releasedWidth)
+        let released = padRight(row.repo.latestRelease.map { formatReleasedLabel($0.publishedAt, now: now) } ?? "-", to: releasedWidth)
         let repoName = row.repo.fullName
         let repoURL = makeRepoURL(baseHost: baseHost, repo: row.repo)
         let repoLabel = formatRepoLabel(
@@ -124,16 +129,6 @@ func tableLines(
             includeURL: includeURL,
             linkEnabled: Ansi.supportsLinks
         )
-        let lineText = row.activityLine.singleLine
-        let lineURL = row.repo.latestActivity?.url
-        let line: String? = if includeEvent {
-            formatEventLabel(
-                text: lineText,
-                url: lineURL,
-                includeURL: includeURL,
-                linkEnabled: Ansi.supportsLinks
-            )
-        } else { nil }
 
         let coloredActivity = useColor ? Ansi.gray.wrap(activity) : activity
         let coloredIssues = useColor ? (row.repo.openIssues > 0 ? Ansi.red.wrap(issues) : Ansi.gray.wrap(issues)) : issues
@@ -142,9 +137,7 @@ func tableLines(
         let coloredRel = useColor ? (row.repo.latestRelease == nil ? Ansi.gray.wrap(rel) : rel) : rel
         let coloredReleased = useColor ? (row.repo.latestRelease == nil ? Ansi.gray.wrap(released) : released) : released
         let coloredRepo = useColor ? Ansi.cyan.wrap(repoLabel) : repoLabel
-        let coloredLine: String? = if let line {
-            useColor && row.repo.error != nil ? Ansi.red.wrap(line) : line
-        } else { nil }
+        let coloredEvent = useColor ? Ansi.gray.wrap(event) : event
 
         var outputParts = [
             coloredActivity,
@@ -152,14 +145,14 @@ func tableLines(
             coloredPulls,
             coloredStars
         ]
-        outputParts.append(coloredRepo)
+        if includeEvent {
+            outputParts.append(coloredEvent)
+        }
         if includeRelease {
             outputParts.append(coloredRel)
             outputParts.append(coloredReleased)
         }
-        if let coloredLine {
-            outputParts.append(coloredLine)
-        }
+        outputParts.append(coloredRepo)
 
         let output = outputParts.joined(separator: "  ")
         lines.append(output)
@@ -254,4 +247,15 @@ private enum DateFormatters {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+}
+
+func formatReleasedLabel(_ date: Date, now: Date = Date()) -> String {
+    let calendar = Calendar.current
+    if calendar.isDate(date, inSameDayAs: now) { return "today" }
+    if let yesterday = calendar.date(byAdding: .day, value: -1, to: now),
+       calendar.isDate(date, inSameDayAs: yesterday)
+    {
+        return "yesterday"
+    }
+    return formatDateYYYYMMDD(date)
 }
