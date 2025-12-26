@@ -5,7 +5,8 @@
   "scripts": {
     "format": "./Scripts/swiftformat.sh",
     "lint": "./Scripts/swiftlint.sh",
-    "check": "pnpm format && pnpm lint && pnpm test",
+    "coverage": "./Scripts/coverage.sh",
+    "check": "pnpm format && pnpm lint && pnpm coverage",
     "docs:list": "node Scripts/docs-list.mjs",
     "test": "swift test",
     "build": "swift build",
