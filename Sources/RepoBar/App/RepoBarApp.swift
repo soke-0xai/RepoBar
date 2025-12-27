@@ -187,6 +187,7 @@ final class AppState: ObservableObject {
                 pinned: self.session.settings.pinnedRepositories,
                 hidden: Set(self.session.settings.hiddenRepositories),
                 includeForks: self.session.settings.showForks,
+                includeArchived: self.session.settings.showArchived,
                 limit: self.session.settings.repoDisplayLimit
             )
             await MainActor.run {
@@ -318,12 +319,18 @@ final class AppState: ObservableObject {
         pinned: [String],
         hidden: Set<String>,
         includeForks: Bool,
+        includeArchived: Bool,
         limit: Int
     ) -> [Repository] {
         let pinnedSet = Set(pinned)
         let filtered = repos.filter { !hidden.contains($0.fullName) }
-        let withoutForks = RepositoryFilter.apply(filtered, includeForks: includeForks, pinned: pinnedSet)
-        let limited = Array(withoutForks.prefix(max(limit, 0)))
+        let visible = RepositoryFilter.apply(
+            filtered,
+            includeForks: includeForks,
+            includeArchived: includeArchived,
+            pinned: pinnedSet
+        )
+        let limited = Array(visible.prefix(max(limit, 0)))
         return limited.sorted { lhs, rhs in
             switch (pinned.firstIndex(of: lhs.fullName), pinned.firstIndex(of: rhs.fullName)) {
             case let (l?, r?): l < r

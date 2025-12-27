@@ -236,6 +236,13 @@ struct GeneralSettingsView: View {
                 }
                 .help("Hidden by default. Enable to show forks in repo lists and search.")
 
+            Toggle("Include archived repositories", isOn: self.$session.settings.showArchived)
+                .onChange(of: self.session.settings.showArchived) { _, _ in
+                    self.appState.persistSettings()
+                    Task { await self.appState.refresh() }
+                }
+                .help("Hidden by default. Enable to show archived repos in repo lists and search.")
+
             Picker("Refresh interval", selection: self.$session.settings.refreshInterval) {
                 ForEach(RefreshInterval.allCases, id: \.self) { interval in
                     Text(self.intervalLabel(interval)).tag(interval)

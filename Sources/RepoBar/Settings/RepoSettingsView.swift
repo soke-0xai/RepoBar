@@ -258,12 +258,13 @@ private struct RepoInputRow<Accessory: View>: View {
 
         do {
             let includeForks = await MainActor.run { self.session.settings.showForks }
+            let includeArchived = await MainActor.run { self.session.settings.showArchived }
             let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
             let prefetched = try? await self.appState.github.prefetchedRepositories()
 
             let localMatches: [Repository] = {
                 guard let prefetched else { return [] }
-                let filtered = RepositoryFilter.apply(prefetched, includeForks: includeForks)
+                let filtered = RepositoryFilter.apply(prefetched, includeForks: includeForks, includeArchived: includeArchived)
                 if trimmed.isEmpty { return Array(filtered.prefix(8)) }
                 return filtered.filter { $0.fullName.localizedCaseInsensitiveContains(trimmed) }
             }()
@@ -272,12 +273,12 @@ private struct RepoInputRow<Accessory: View>: View {
 
             if trimmed.count >= 3 {
                 let remote = try await self.appState.github.searchRepositories(matching: trimmed)
-                let filteredRemote = RepositoryFilter.apply(remote, includeForks: includeForks)
+                let filteredRemote = RepositoryFilter.apply(remote, includeForks: includeForks, includeArchived: includeArchived)
                 merged = Self.merge(local: localMatches, remote: filteredRemote, limit: 8)
             }
 
             if merged.isEmpty, let prefetched {
-                let filtered = RepositoryFilter.apply(prefetched, includeForks: includeForks)
+                let filtered = RepositoryFilter.apply(prefetched, includeForks: includeForks, includeArchived: includeArchived)
                 merged = Array(filtered.prefix(8)) // Fallback to cached recents if nothing matches.
             }
 

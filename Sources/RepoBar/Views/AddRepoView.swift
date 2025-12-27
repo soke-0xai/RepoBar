@@ -58,13 +58,14 @@ struct AddRepoView: View {
         defer { self.isLoading = false }
         do {
             let includeForks = await MainActor.run { self.session.settings.showForks }
+            let includeArchived = await MainActor.run { self.session.settings.showArchived }
             let trimmed = self.query.trimmingCharacters(in: .whitespacesAndNewlines)
             let repos: [Repository] = if trimmed.isEmpty {
                 try await self.appState.github.recentRepositories(limit: 10)
             } else {
                 try await self.appState.github.searchRepositories(matching: trimmed)
             }
-            let filtered = RepositoryFilter.apply(repos, includeForks: includeForks)
+            let filtered = RepositoryFilter.apply(repos, includeForks: includeForks, includeArchived: includeArchived)
             await MainActor.run { self.results = filtered }
         } catch {
             // Ignored; UI stays empty
