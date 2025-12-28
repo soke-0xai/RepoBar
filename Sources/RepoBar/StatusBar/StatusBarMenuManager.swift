@@ -4,8 +4,8 @@ import SwiftUI
 
 @MainActor
 final class StatusBarMenuManager: NSObject, NSMenuDelegate {
-    private static let menuMinWidth: CGFloat = 260
-    private static let menuMaxWidth: CGFloat = 340
+    private static let menuMinWidth: CGFloat = 420
+    private static let menuMaxWidth: CGFloat = 560
 
     private let appState: AppState
     private var mainMenu: NSMenu?
@@ -190,8 +190,8 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             let header = ContributionHeaderView(username: username)
                 .environmentObject(session)
                 .environmentObject(self.appState)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 2)
             menu.addItem(self.viewItem(for: header, enabled: false))
             menu.addItem(.separator())
         }

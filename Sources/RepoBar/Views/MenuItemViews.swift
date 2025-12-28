@@ -31,7 +31,7 @@ struct RepoMenuCardView: View {
                 self.heatmap
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 5)
+            .padding(.vertical, 6)
             .frame(maxWidth: .infinity, alignment: .leading)
             if self.showsSeparator {
                 Rectangle()
@@ -49,6 +49,7 @@ struct RepoMenuCardView: View {
                 HStack(spacing: 6) {
                     Text(self.repo.title)
                         .font(.subheadline)
+                        .fontWeight(.regular)
                         .lineLimit(1)
                     if self.isPinned {
                         Image(systemName: "pin.fill")
@@ -117,12 +118,11 @@ struct RepoMenuCardView: View {
     private var heatmap: some View {
         if self.showHeatmap, !self.repo.heatmap.isEmpty {
             let filtered = HeatmapFilter.filter(self.repo.heatmap, span: self.heatmapSpan)
-            HeatmapView(cells: filtered, accentTone: self.accentTone)
-                .padding(.horizontal, -10)
+            HeatmapView(cells: filtered, accentTone: self.accentTone, height: 44)
         }
     }
 
-    private var verticalSpacing: CGFloat { 3 }
+    private var verticalSpacing: CGFloat { 4 }
 }
 
 struct MenuStatBadge: View {

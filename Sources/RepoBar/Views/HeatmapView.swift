@@ -7,6 +7,7 @@ struct HeatmapView: View {
     private let rows = 7
     private let minColumns = 53
     private let spacing: CGFloat = 0.5
+    private let height: CGFloat?
     @Environment(\.menuItemHighlighted) private var isHighlighted
     private var summary: String {
         let total = self.cells.map(\.count).reduce(0, +)
@@ -14,30 +15,34 @@ struct HeatmapView: View {
         return "Commit activity heatmap, total \(total) commits, max \(maxVal) in a day."
     }
 
-    init(cells: [HeatmapCell], accentTone: AccentTone = .githubGreen) {
+    init(cells: [HeatmapCell], accentTone: AccentTone = .githubGreen, height: CGFloat? = nil) {
         self.cells = cells
         self.accentTone = accentTone
+        self.height = height
     }
 
     var body: some View {
-        let columns = self.columnCount
-        let grid = HeatmapLayout.reshape(cells: self.cells, columns: columns, rows: self.rows)
-        Canvas { context, size in
+        GeometryReader { proxy in
+            let size = proxy.size
             let cellSide = self.cellSide(for: size)
-            for (x, column) in grid.enumerated() {
-                for (y, cell) in column.enumerated() {
-                    let origin = CGPoint(
-                        x: CGFloat(x) * (cellSide + self.spacing),
-                        y: CGFloat(y) * (cellSide + self.spacing)
-                    )
-                    let rect = CGRect(origin: origin, size: CGSize(width: cellSide, height: cellSide))
-                    let path = Path(roundedRect: rect, cornerRadius: cellSide * 0.12)
-                    context.fill(path, with: .color(self.color(for: cell.count)))
+            let columns = self.columnCount(for: size, cellSide: cellSide)
+            let grid = HeatmapLayout.reshape(cells: self.cells, columns: columns, rows: self.rows)
+            Canvas { context, _ in
+                for (x, column) in grid.enumerated() {
+                    for (y, cell) in column.enumerated() {
+                        let origin = CGPoint(
+                            x: CGFloat(x) * (cellSide + self.spacing),
+                            y: CGFloat(y) * (cellSide + self.spacing)
+                        )
+                        let rect = CGRect(origin: origin, size: CGSize(width: cellSide, height: cellSide))
+                        let path = Path(roundedRect: rect, cornerRadius: cellSide * 0.12)
+                        context.fill(path, with: .color(self.color(for: cell.count)))
+                    }
                 }
             }
         }
-        .aspectRatio(CGFloat(columns) / CGFloat(self.rows), contentMode: .fit)
-        .frame(maxWidth: .infinity, minHeight: 28, maxHeight: 60, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: self.height)
         .accessibilityLabel(self.summary)
         .accessibilityElement(children: .ignore)
     }
@@ -57,11 +62,11 @@ struct HeatmapView: View {
         if self.isHighlighted {
             let base = Color(nsColor: .selectedMenuItemTextColor)
             return [
-                base.opacity(0.14),
-                base.opacity(0.24),
-                base.opacity(0.38),
-                base.opacity(0.52),
-                base.opacity(0.7)
+                base.opacity(0.22),
+                base.opacity(0.4),
+                base.opacity(0.6),
+                base.opacity(0.8),
+                base.opacity(0.95)
             ]
         }
         switch self.accentTone {
@@ -85,17 +90,17 @@ struct HeatmapView: View {
         }
     }
 
-    private var columnCount: Int {
-        let columns = Int(ceil(Double(self.cells.count) / Double(self.rows)))
+    private func columnCount(for size: CGSize, cellSide: CGFloat) -> Int {
+        guard cellSide > 0 else { return self.minColumns }
+        let available = max(size.width + self.spacing, 0)
+        let columns = Int(floor(available / (cellSide + self.spacing)))
         return max(columns, self.minColumns)
     }
 
     private func cellSide(for size: CGSize) -> CGFloat {
-        let totalSpacingX = CGFloat(self.columnCount - 1) * self.spacing
         let totalSpacingY = CGFloat(self.rows - 1) * self.spacing
-        let availableWidth = max(size.width - totalSpacingX, 0)
         let availableHeight = max(size.height - totalSpacingY, 0)
-        let side = min(availableWidth / CGFloat(self.columnCount), availableHeight / CGFloat(self.rows))
+        let side = availableHeight / CGFloat(self.rows)
         return max(2, min(10, floor(side)))
     }
 }
