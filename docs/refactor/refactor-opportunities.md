@@ -70,7 +70,7 @@ Last updated: 2025-12-28
 
 ## Settings + Config
 
-### [ ] 8) Settings migration
+### [x] 8) Settings migration
 - Add versioned migrations for `UserSettings`.
 - Example: `showHeatmap -> heatmapDisplay` mapping.
 
