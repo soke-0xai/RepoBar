@@ -8,18 +8,39 @@ struct RepoBarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self)
     var appDelegate
     @StateObject private var appState = AppState()
+    @State private var isMenuPresented = false
 
-    init() {
-        // Share a single AppState between the App delegate (status item) and SwiftUI scenes.
-        self.appDelegate.inject(appState: self.appState)
-    }
-
+    @SceneBuilder
     var body: some Scene {
+        WindowGroup("RepoBarLifecycleKeepalive") {
+            HiddenWindowView()
+        }
+        .defaultSize(width: 20, height: 20)
+        .windowStyle(.hiddenTitleBar)
+
+        MenuBarExtra {
+            RepoBarMenuContent()
+                .environmentObject(self.appState.session)
+                .environmentObject(self.appState)
+        } label: {
+            StatusItemLabelView()
+                .environmentObject(self.appState.session)
+        }
+        .menuBarExtraStyle(.menu)
+        .menuBarExtraAccess(isPresented: self.$isMenuPresented) { _ in }
+        .onChange(of: self.isMenuPresented) { _, presented in
+            if presented {
+                self.appState.refreshIfNeededForMenu()
+            }
+        }
+
         Settings {
             SettingsView()
                 .environmentObject(self.appState.session)
                 .environmentObject(self.appState)
         }
+        .defaultSize(width: 540, height: 420)
+        .windowResizability(.contentSize)
     }
 }
 
@@ -27,20 +48,12 @@ struct RepoBarApp: App {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var statusBarController: StatusBarController?
-    private var appState = AppState()
-
-    func inject(appState: AppState) {
-        self.appState = appState
-    }
-
     func applicationDidFinishLaunching(_: Notification) {
         guard ensureSingleInstance() else {
             NSApp.terminate(nil)
             return
         }
         NSApp.setActivationPolicy(.accessory)
-        self.statusBarController = StatusBarController(appState: self.appState)
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_: NSApplication) -> Bool {
@@ -68,6 +81,8 @@ final class AppState: ObservableObject {
     let github = GitHubClient()
     let refreshScheduler = RefreshScheduler()
     private let settingsStore = SettingsStore()
+    private var lastMenuRefresh: Date?
+    private let menuRefreshInterval: TimeInterval = 30
 
     // Default GitHub App values for convenience login from the main window.
     private let defaultClientID = RepoBarAuthDefaults.clientID
@@ -87,6 +102,15 @@ final class AppState: ObservableObject {
             Task { await self?.refresh() }
         }
         Task { await DiagnosticsLogger.shared.setEnabled(self.session.settings.diagnosticsEnabled) }
+    }
+
+    func refreshIfNeededForMenu() {
+        let now = Date()
+        if let lastMenuRefresh, now.timeIntervalSince(lastMenuRefresh) < self.menuRefreshInterval {
+            return
+        }
+        self.lastMenuRefresh = now
+        self.refreshScheduler.forceRefresh()
     }
 
     /// Starts the OAuth flow using the default GitHub App credentials, invoked from the logged-out prompt.

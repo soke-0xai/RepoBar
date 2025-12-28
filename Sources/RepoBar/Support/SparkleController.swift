@@ -2,9 +2,9 @@ import Foundation
 import Security
 
 @MainActor
-final class UpdateStatus {
+final class UpdateStatus: ObservableObject {
     static let disabled = UpdateStatus()
-    var isUpdateReady: Bool
+    @Published var isUpdateReady: Bool
 
     init(isUpdateReady: Bool = false) {
         self.isUpdateReady = isUpdateReady

@@ -29,7 +29,7 @@
 - Menu filters use compact segmented controls and the update prompt is labeled “Restart to update”.
 - Menu filters now sit on a single row and the menu includes an About item.
 - Menu filter toggles now refresh the menu immediately.
-- Preferences now open via the standard SwiftUI Settings scene.
+- Menu bar now uses SwiftUI MenuBarExtra with a keepalive window to open Preferences reliably.
 - Empty repo state now explains active filters and keeps filter controls visible.
 
 ### Fixed

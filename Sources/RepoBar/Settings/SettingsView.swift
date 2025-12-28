@@ -29,6 +29,7 @@ struct SettingsView: View {
                 .tabItem { Label("About", systemImage: "info.circle") }
                 .tag(SettingsTab.about)
         }
+        .tabViewStyle(.automatic)
         .frame(width: 540, height: 420)
         .onChange(of: self.session.settings.debugPaneEnabled) { _, enabled in
             #if DEBUG
