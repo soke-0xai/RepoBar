@@ -5,21 +5,18 @@ public enum RepositoryFilter {
         _ repos: [Repository],
         includeForks: Bool,
         includeArchived: Bool,
-        pinned: Set<String> = []
+        pinned: Set<String> = [],
+        onlyWith: RepositoryOnlyWith = .none
     ) -> [Repository] {
-        guard includeForks == false || includeArchived == false else { return repos }
-
-        if pinned.isEmpty {
-            return repos.filter { repo in
-                (includeForks || repo.isFork == false) && (includeArchived || repo.isArchived == false)
-            }
-        }
+        let needsFilter = includeForks == false || includeArchived == false || onlyWith.isActive
+        guard needsFilter else { return repos }
 
         return repos.filter { repo in
-            let isPinned = pinned.contains(repo.fullName)
-            let forkOK = includeForks || repo.isFork == false || isPinned
-            let archivedOK = includeArchived || repo.isArchived == false || isPinned
-            return forkOK && archivedOK
+            if pinned.contains(repo.fullName) { return true }
+            if includeForks == false, repo.isFork { return false }
+            if includeArchived == false, repo.isArchived { return false }
+            if onlyWith.isActive, onlyWith.matches(repo) == false { return false }
+            return true
         }
     }
 }
