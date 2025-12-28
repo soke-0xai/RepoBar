@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StatusItemLabelView: View {
     @Bindable var session: Session
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         let status = self.aggregateStatus()
@@ -21,6 +22,11 @@ struct StatusItemLabelView: View {
         }
         .frame(width: 18, height: 18)
         .accessibilityLabel("RepoBar")
+        .onAppear {
+            SettingsOpener.shared.configure {
+                self.openSettings()
+            }
+        }
     }
 
     private func aggregateStatus() -> AggregateStatus {

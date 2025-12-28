@@ -10,20 +10,21 @@ struct RepoBarApp: App {
     var appDelegate
     @State private var appState = AppState()
     @State private var isMenuPresented = false
+    @State private var menuManager: StatusBarMenuManager?
 
     @SceneBuilder
     var body: some Scene {
         MenuBarExtra {
-            RepoBarMenuContent(session: self.appState.session, appState: self.appState)
+            EmptyView()
         } label: {
             StatusItemLabelView(session: self.appState.session)
         }
         .menuBarExtraStyle(.menu)
-        .menuBarExtraAccess(isPresented: self.$isMenuPresented) { _ in }
-        .onChange(of: self.isMenuPresented) { _, presented in
-            if presented {
-                self.appState.refreshIfNeededForMenu()
+        .menuBarExtraAccess(isPresented: self.$isMenuPresented) { item in
+            if self.menuManager == nil {
+                self.menuManager = StatusBarMenuManager(appState: self.appState)
             }
+            self.menuManager?.attachMainMenu(to: item)
         }
 
         Settings {
