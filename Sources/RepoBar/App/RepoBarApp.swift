@@ -170,13 +170,13 @@ final class AppState {
                 includeArchived: self.session.settings.showArchived,
                 limit: Int.max
             )
+            let ordered = self.applyPinnedOrder(to: trimmed)
+            let menuTargets = self.menuTargets(from: ordered)
+            let detailed = await self.fetchDetailedRepos(menuTargets)
+            let merged = self.mergeDetailed(detailed, into: ordered)
+            let final = self.applyPinnedOrder(to: merged)
             await MainActor.run {
-                self.session.repositories = trimmed.map { repo in
-                    if let idx = session.settings.pinnedRepositories.firstIndex(of: repo.fullName) {
-                        return repo.withOrder(idx)
-                    }
-                    return repo
-                }
+                self.session.repositories = final
                 self.session.hasLoadedRepositories = true
                 self.session.rateLimitReset = nil
                 self.session.lastError = nil
@@ -190,6 +190,63 @@ final class AppState {
             }
         } catch {
             await MainActor.run { self.session.lastError = error.userFacingMessage }
+        }
+    }
+
+    private func menuTargets(from repos: [Repository]) -> [Repository] {
+        let selection = self.session.menuRepoSelection
+        let sortKey = self.session.settings.menuSortKey
+        var sorted = repos.sorted { lhs, rhs in
+            switch (lhs.sortOrder, rhs.sortOrder) {
+            case let (left?, right?):
+                return left < right
+            case (.none, .some):
+                return false
+            case (.some, .none):
+                return true
+            default:
+                return RepositorySort.isOrderedBefore(lhs, rhs, sortKey: sortKey)
+            }
+        }
+        if selection.isPinnedScope {
+            let pinned = Set(self.session.settings.pinnedRepositories)
+            sorted = sorted.filter { pinned.contains($0.fullName) }
+        }
+        let onlyWith = selection.onlyWith
+        if onlyWith.isActive {
+            sorted = sorted.filter { onlyWith.matches($0) }
+        }
+        let limit = max(self.session.settings.repoDisplayLimit, 0)
+        return Array(sorted.prefix(limit))
+    }
+
+    private func fetchDetailedRepos(_ repos: [Repository]) async -> [Repository] {
+        await withTaskGroup(of: Repository?.self) { group in
+            for repo in repos {
+                group.addTask { [github] in
+                    try? await github.fullRepository(owner: repo.owner, name: repo.name)
+                }
+            }
+            var detailed: [Repository] = []
+            for await repo in group {
+                if let repo { detailed.append(repo) }
+            }
+            return detailed
+        }
+    }
+
+    private func mergeDetailed(_ detailed: [Repository], into repos: [Repository]) -> [Repository] {
+        let lookup = Dictionary(uniqueKeysWithValues: detailed.map { ($0.fullName, $0) })
+        return repos.map { lookup[$0.fullName] ?? $0 }
+    }
+
+    private func applyPinnedOrder(to repos: [Repository]) -> [Repository] {
+        let pinned = self.session.settings.pinnedRepositories
+        return repos.map { repo in
+            if let idx = pinned.firstIndex(of: repo.fullName) {
+                return repo.withOrder(idx)
+            }
+            return repo
         }
     }
 
