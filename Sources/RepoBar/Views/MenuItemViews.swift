@@ -48,7 +48,6 @@ struct RepoMenuCardView: View {
         HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    MenuStatusDot(status: self.repo.ciStatus)
                     Text(self.repo.title)
                         .font(.subheadline)
                         .fontWeight(.regular)
@@ -184,19 +183,6 @@ struct MenuCIBadge: View {
     }
 }
 
-struct MenuStatusDot: View {
-    let status: CIStatus
-
-    var body: some View {
-        Circle()
-            .fill(MenuCIBadge.dotColor(for: self.status, isLightAppearance: self.isLightAppearance))
-            .frame(width: 6, height: 6)
-    }
-
-    private var isLightAppearance: Bool {
-        NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua
-    }
-}
 
 struct MenuLoggedOutView: View {
     var body: some View {
