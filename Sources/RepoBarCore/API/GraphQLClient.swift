@@ -230,7 +230,40 @@ private struct ContributionWeek: Decodable {
     let contributionDays: [ContributionDay]
 }
 
-private struct ContributionDay: Decodable {
+struct ContributionDay: Decodable {
     let date: Date
     let contributionCount: Int
+
+    private enum CodingKeys: String, CodingKey {
+        case date
+        case contributionCount
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let rawDate = try container.decode(String.self, forKey: .date)
+        guard let parsedDate = Self.parseDate(rawDate) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .date,
+                in: container,
+                debugDescription: "Unsupported date format: \(rawDate)")
+        }
+        self.date = parsedDate
+        self.contributionCount = try container.decode(Int.self, forKey: .contributionCount)
+    }
+
+    private static func parseDate(_ raw: String) -> Date? {
+        if raw.contains("T") {
+            let formatter = ISO8601DateFormatter()
+            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            if let date = formatter.date(from: raw) { return date }
+            formatter.formatOptions = [.withInternetDateTime]
+            return formatter.date(from: raw)
+        }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.date(from: raw)
+    }
 }
