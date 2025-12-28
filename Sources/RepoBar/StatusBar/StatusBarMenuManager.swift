@@ -463,7 +463,8 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     }
 
     private func orderedViewModels() -> [RepositoryViewModel] {
-        let repos = self.appState.session.repositories
+        let session = self.appState.session
+        let repos = session.repositories
             .prefix(self.appState.session.settings.repoDisplayLimit)
             .map { RepositoryViewModel(repo: $0) }
         let sortKey = session.settings.menuSortKey
@@ -479,7 +480,6 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 return RepositorySort.isOrderedBefore(lhs.source, rhs.source, sortKey: sortKey)
             }
         }
-        let session = self.appState.session
         if session.menuRepoScope == .pinned {
             let pinned = Set(session.settings.pinnedRepositories)
             sorted = sorted.filter { pinned.contains($0.title) }
