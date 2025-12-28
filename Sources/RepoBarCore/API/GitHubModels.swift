@@ -209,7 +209,7 @@ extension RepoEvent {
     }
 
     static func displayName(for type: String) -> String {
-        switch type {
+        return switch type {
         case "PullRequestEvent": "Pull Request"
         case "PullRequestReviewEvent": "Pull Request Review"
         case "PullRequestReviewCommentEvent": "Pull Request Review Comment"
@@ -228,8 +228,7 @@ extension RepoEvent {
         case "CommitCommentEvent": "Commit Comment"
         case "DiscussionEvent": "Discussion"
         case "SponsorshipEvent": "Sponsorship"
-        default:
-            return Self.prettyName(for: type)
+        default: Self.prettyName(for: type)
         }
     }
 
