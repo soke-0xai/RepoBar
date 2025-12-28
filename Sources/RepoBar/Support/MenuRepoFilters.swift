@@ -10,6 +10,8 @@ enum MenuRepoScope: String, CaseIterable, Hashable {
     }
 }
 
+import RepoBarCore
+
 enum MenuRepoFilter: String, CaseIterable, Hashable {
     case all
     case work
