@@ -60,7 +60,7 @@ struct RepoMenuCardView: View {
                     .fontWeight(.regular)
                     .lineLimit(1)
                 if let lastPushAge = self.repo.lastPushAge {
-                    Text("Push \(lastPushAge)")
+                    Text("• \(lastPushAge)")
                         .font(.caption2)
                         .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
                         .lineLimit(1)
