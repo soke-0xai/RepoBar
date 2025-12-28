@@ -353,6 +353,13 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 systemImage: "clock.arrow.circlepath"))
         }
 
+        let detailItems = self.repoDetailItems(for: repo)
+        if !detailItems.isEmpty {
+            menu.addItem(.separator())
+            menu.addItem(self.infoItem("Details"))
+            detailItems.forEach { menu.addItem($0) }
+        }
+
         menu.addItem(.separator())
 
         if isPinned {
@@ -396,6 +403,26 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         }
 
         return menu
+    }
+
+    private func repoDetailItems(for repo: RepositoryViewModel) -> [NSMenuItem] {
+        var items: [NSMenuItem] = []
+        if let runCount = repo.ciRunCount {
+            items.append(self.infoItem("CI runs: \(runCount)"))
+        }
+        if let visitors = repo.trafficVisitors {
+            items.append(self.infoItem("Visitors (14d): \(visitors)"))
+        }
+        if let cloners = repo.trafficCloners {
+            items.append(self.infoItem("Cloners (14d): \(cloners)"))
+        }
+        return items
+    }
+
+    private func infoItem(_ title: String) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        return item
     }
 
 
