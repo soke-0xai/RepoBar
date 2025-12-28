@@ -705,7 +705,7 @@ private struct MenuItemContainerView<Content: View>: View {
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(MenuHighlightStyle.secondary(self.highlightState.isHighlighted))
                         .padding(.top, 8)
-                        .padding(.trailing, 6)
+                        .padding(.trailing, 10)
                 }
             }
     }
