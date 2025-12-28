@@ -44,7 +44,7 @@ struct EventLabelTests {
             payload: EventPayload(
                 action: "opened",
                 comment: nil,
-                issue: EventIssue(title: "Fix it", htmlUrl: URL(string: "https://example.com/issue/1")!),
+                issue: EventIssue(title: "Fix it", number: 123, htmlUrl: URL(string: "https://example.com/issue/1")!),
                 pullRequest: nil
             ),
             createdAt: Date()
