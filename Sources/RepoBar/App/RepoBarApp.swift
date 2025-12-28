@@ -15,13 +15,6 @@ struct RepoBarApp: App {
     }
 
     var body: some Scene {
-        // Hidden lifecycle keeper so Settings window can appear even without a main window (mirrors CodexBar/Trimmy)
-        WindowGroup("RepoBarLifecycleKeepalive") {
-            HiddenWindowView()
-        }
-        .defaultSize(width: 1, height: 1)
-        .windowStyle(.hiddenTitleBar)
-
         Settings {
             SettingsView()
                 .environmentObject(self.appState.session)
@@ -64,40 +57,6 @@ extension AppDelegate {
         }
         return others.isEmpty
     }
-}
-
-// MARK: - Hidden Window View
-
-struct HiddenWindowView: View {
-    @Environment(\.openSettings) private var openSettings
-
-    var body: some View {
-        Color.clear
-            .frame(width: 1, height: 1)
-            .onReceive(NotificationCenter.default.publisher(for: .repobarOpenSettings)) { _ in
-                Task { @MainActor in
-                    self.openSettings()
-                }
-            }
-            .onAppear {
-                if let window = NSApp.windows.first(where: { $0.title == "RepoBarLifecycleKeepalive" }) {
-                    window.collectionBehavior = [.auxiliary, .ignoresCycle, .transient]
-                    window.isExcludedFromWindowsMenu = true
-                    window.level = .floating
-                    window.isOpaque = false
-                    window.backgroundColor = .clear
-                    window.hasShadow = false
-                    window.ignoresMouseEvents = true
-                    window.canHide = false
-                }
-            }
-    }
-}
-
-// MARK: - Notifications
-
-extension Notification.Name {
-    static let repobarOpenSettings = Notification.Name("repobarOpenSettings")
 }
 
 // MARK: - AppState container

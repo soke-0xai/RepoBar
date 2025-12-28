@@ -127,9 +127,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     }
 
     @objc private func openPreferences() {
-        NSApp.activate(ignoringOtherApps: true)
-        NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-        NotificationCenter.default.post(name: .repobarOpenSettings, object: nil)
+        AppActions.openSettings()
     }
 
     @objc private func checkForUpdates() {

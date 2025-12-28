@@ -5,7 +5,6 @@ struct MenuContentView: View {
     @EnvironmentObject var session: Session
     @EnvironmentObject var appState: AppState
     @State private var showingAddRepo = false
-    @Environment(\.openSettings) private var openSettingsAction
 
     var body: some View {
         ScrollView {
@@ -134,7 +133,7 @@ struct MenuContentView: View {
     }
 
     private func openSettings() {
-        self.openSettingsAction()
+        AppActions.openSettings()
     }
 }
 
