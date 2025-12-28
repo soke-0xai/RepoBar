@@ -30,6 +30,7 @@
 - Menu filters now sit on a single row and the menu includes an About item.
 - Menu filter toggles now refresh the menu immediately.
 - Preferences now open via the standard SwiftUI Settings scene.
+- Empty repo state now explains active filters and keeps filter controls visible.
 
 ### Fixed
 - mac app no longer crashes on launch due to the hidden keepalive window; Settings opens via AppKit action.

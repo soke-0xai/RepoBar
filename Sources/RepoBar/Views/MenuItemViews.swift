@@ -191,14 +191,25 @@ struct MenuLoggedOutView: View {
 }
 
 struct MenuEmptyStateView: View {
+    let title: String
+    let subtitle: String
+
+    init(
+        title: String = "No repositories yet",
+        subtitle: String = "Pin a repository to see activity here."
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+    }
+
     var body: some View {
         VStack(spacing: 8) {
             Image(systemName: "tray.fill")
                 .font(.system(size: 24, weight: .semibold))
                 .foregroundStyle(.secondary)
-            Text("No repositories yet")
+            Text(self.title)
                 .font(.headline)
-            Text("Pin a repository to see activity here.")
+            Text(self.subtitle)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

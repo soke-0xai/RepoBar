@@ -257,18 +257,23 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         }
 
         let repos = self.orderedViewModels()
-        if repos.isEmpty {
-            let emptyState = MenuEmptyStateView()
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-            menu.addItem(self.viewItem(for: emptyState, enabled: false))
-        } else {
+        let showFilters = session.hasLoadedRepositories
+        if showFilters {
             let filters = MenuRepoFiltersView()
                 .environmentObject(self.appState.session)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
             menu.addItem(self.viewItem(for: filters, enabled: true))
             menu.addItem(.separator())
+        }
+
+        if repos.isEmpty {
+            let (title, subtitle) = self.emptyStateMessage(for: session)
+            let emptyState = MenuEmptyStateView(title: title, subtitle: subtitle)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            menu.addItem(self.viewItem(for: emptyState, enabled: false))
+        } else {
             for (index, repo) in repos.enumerated() {
                 let isPinned = settings.pinnedRepositories.contains(repo.title)
                 let card = RepoMenuCardView(
@@ -485,6 +490,19 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             sorted = sorted.filter { onlyWith.matches($0.source) }
         }
         return sorted
+    }
+
+    private func emptyStateMessage(for session: Session) -> (String, String) {
+        let hasPinned = !session.settings.pinnedRepositories.isEmpty
+        let isPinnedScope = session.menuRepoScope == .pinned
+        let hasFilter = session.menuRepoFilter.onlyWith.isActive
+        if isPinnedScope, !hasPinned {
+            return ("No pinned repositories", "Pin a repository to see activity here.")
+        }
+        if isPinnedScope || hasFilter {
+            return ("No repositories match this filter", "Try All or a different filter.")
+        }
+        return ("No repositories yet", "Pin a repository to see activity here.")
     }
 
     private func currentUsername() -> String? {
