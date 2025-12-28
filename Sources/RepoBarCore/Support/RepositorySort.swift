@@ -1,6 +1,6 @@
 import Foundation
 
-public enum RepositorySortKey: String, Sendable {
+public enum RepositorySortKey: String, Sendable, CaseIterable, Codable {
     case activity
     case issues
     case pulls

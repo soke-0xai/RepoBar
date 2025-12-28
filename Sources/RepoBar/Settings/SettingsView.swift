@@ -250,6 +250,14 @@ struct GeneralSettingsView: View {
                 Picker("Repositories shown", selection: self.$session.settings.repoDisplayLimit) {
                     ForEach([3, 5, 8, 12], id: \.self) { Text("\($0)").tag($0) }
                 }
+                Picker("Menu sort", selection: self.$session.settings.menuSortKey) {
+                    ForEach(RepositorySortKey.menuCases, id: \.self) { sortKey in
+                        Text(sortKey.settingsLabel).tag(sortKey)
+                    }
+                }
+                .onChange(of: self.session.settings.menuSortKey) { _, _ in
+                    self.appState.persistSettings()
+                }
                 Toggle("Include forked repositories", isOn: self.$session.settings.showForks)
                     .onChange(of: self.session.settings.showForks) { _, _ in
                         self.appState.persistSettings()

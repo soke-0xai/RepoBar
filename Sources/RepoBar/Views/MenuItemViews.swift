@@ -304,7 +304,21 @@ struct MenuRepoFiltersView: View {
             .controlSize(.mini)
             .fixedSize()
 
-            Spacer(minLength: 8)
+            Spacer(minLength: 6)
+
+            Picker("Sort", selection: self.$session.settings.menuSortKey) {
+                ForEach(RepositorySortKey.menuCases, id: \.self) { sortKey in
+                    Label(sortKey.menuLabel, systemImage: sortKey.menuSymbolName)
+                        .labelStyle(.iconOnly)
+                        .tag(sortKey)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .controlSize(.mini)
+            .fixedSize()
+
+            Spacer(minLength: 6)
 
             Picker("Filter", selection: self.$session.menuRepoFilter) {
                 ForEach(MenuRepoFilter.allCases, id: \.self) { filter in
@@ -321,6 +335,9 @@ struct MenuRepoFiltersView: View {
             NotificationCenter.default.post(name: .menuFiltersDidChange, object: nil)
         }
         .onChange(of: self.session.menuRepoFilter) { _, _ in
+            NotificationCenter.default.post(name: .menuFiltersDidChange, object: nil)
+        }
+        .onChange(of: self.session.settings.menuSortKey) { _, _ in
             NotificationCenter.default.post(name: .menuFiltersDidChange, object: nil)
         }
     }

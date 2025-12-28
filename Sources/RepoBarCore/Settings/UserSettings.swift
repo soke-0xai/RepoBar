@@ -11,6 +11,7 @@ public struct UserSettings: Equatable, Codable {
     public var heatmapSpan: HeatmapSpan = .twelveMonths
     public var cardDensity: CardDensity = .comfortable
     public var accentTone: AccentTone = .githubGreen
+    public var menuSortKey: RepositorySortKey = .activity
     public var debugPaneEnabled: Bool = false
     public var diagnosticsEnabled: Bool = false
     public var githubHost: URL = .init(string: "https://github.com")!

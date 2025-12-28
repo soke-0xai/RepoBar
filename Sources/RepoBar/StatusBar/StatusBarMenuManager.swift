@@ -5,8 +5,7 @@ import SwiftUI
 
 @MainActor
 final class StatusBarMenuManager: NSObject, NSMenuDelegate {
-    private static let menuMinWidth: CGFloat = 420
-    private static let menuMaxWidth: CGFloat = 560
+    private static let menuFixedWidth: CGFloat = 360
 
     private let appState: AppState
     private var mainMenu: NSMenu?
@@ -50,6 +49,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
 
     @objc private func menuFiltersChanged() {
         guard let menu = self.mainMenu else { return }
+        self.appState.persistSettings()
         self.populateMainMenu(menu)
         self.refreshMenuViewHeights(in: menu)
         menu.update()
@@ -452,10 +452,8 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         }
     }
 
-    private func menuWidth(for menu: NSMenu) -> CGFloat {
-        let widths = menu.items.compactMap { $0.view?.fittingSize.width }
-        let maxWidth = widths.max() ?? Self.menuMinWidth
-        return min(max(maxWidth, Self.menuMinWidth), Self.menuMaxWidth)
+    private func menuWidth(for _: NSMenu) -> CGFloat {
+        Self.menuFixedWidth
     }
 
     private func clearHighlights(in menu: NSMenu) {
@@ -468,6 +466,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         let repos = self.appState.session.repositories
             .prefix(self.appState.session.settings.repoDisplayLimit)
             .map { RepositoryViewModel(repo: $0) }
+        let sortKey = session.settings.menuSortKey
         var sorted = repos.sorted { lhs, rhs in
             switch (lhs.sortOrder, rhs.sortOrder) {
             case let (left?, right?):
@@ -477,7 +476,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             case (.some, .none):
                 return true
             default:
-                return RepositorySort.isOrderedBefore(lhs.source, rhs.source, sortKey: .activity)
+                return RepositorySort.isOrderedBefore(lhs.source, rhs.source, sortKey: sortKey)
             }
         }
         let session = self.appState.session

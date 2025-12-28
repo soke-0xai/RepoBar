@@ -256,6 +256,7 @@ final class AppState {
     func loadContributionHeatmapIfNeeded(for username: String) async {
         guard self.session.settings.showContributionHeader, self.session.settings.showHeatmap, self.session.hasLoadedRepositories else { return }
         if self.session.contributionUser == username, !self.session.contributionHeatmap.isEmpty { return }
+        let hasExisting = self.session.contributionUser == username && !self.session.contributionHeatmap.isEmpty
         if let cached = ContributionCacheStore.load(), cached.username == username, cached.isValid {
             await MainActor.run {
                 self.session.contributionUser = username
@@ -279,8 +280,10 @@ final class AppState {
             ContributionCacheStore.save(cache)
         } catch {
             await MainActor.run {
-                self.session.contributionHeatmap = []
-                self.session.contributionUser = username
+                if !hasExisting {
+                    self.session.contributionHeatmap = []
+                    self.session.contributionUser = username
+                }
                 self.session.contributionError = error.userFacingMessage
             }
         }

@@ -19,12 +19,14 @@ struct ContributionHeaderView: View {
             }
             .task(id: self.session.hasLoadedRepositories) {
                 guard self.session.hasLoadedRepositories else { return }
-                self.isLoading = true
+                let hasHeatmap = self.session.contributionUser == self.username && !self.session.contributionHeatmap.isEmpty
+                self.isLoading = !hasHeatmap
                 self.failed = false
                 await self.appState.loadContributionHeatmapIfNeeded(for: self.username)
                 await MainActor.run {
                     self.isLoading = false
-                    self.failed = self.session.contributionHeatmap.isEmpty
+                    let hasData = self.session.contributionUser == self.username && !self.session.contributionHeatmap.isEmpty
+                    self.failed = !hasData && self.session.contributionError != nil
                 }
             }
         }

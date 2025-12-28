@@ -32,6 +32,7 @@
 - Menu bar now uses MenuBarExtraAccess with an AppKit NSMenu for native layout while still opening Preferences directly from the menu.
 - Empty repo state now explains active filters and keeps filter controls visible.
 - SwiftUI and app models now use `@Observable`/`@Bindable` for state updates.
+- Menu sort order is now configurable in the menu and saved in Settings.
 
 ### Fixed
 - Settings now open via SwiftUI `openSettings` from the MenuBarExtra.
