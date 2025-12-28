@@ -324,16 +324,6 @@ struct MenuRepoFiltersView: View {
 
             Spacer(minLength: 6)
 
-            Picker("Sort", selection: self.$session.settings.menuSortKey) {
-                ForEach(RepositorySortKey.menuCases, id: \.self) { sortKey in
-                    Text(sortKey.menuLabel).tag(sortKey)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .controlSize(.mini)
-            .fixedSize()
-
             Spacer(minLength: 6)
 
             MenuFilterToggle(

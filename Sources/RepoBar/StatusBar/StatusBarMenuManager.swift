@@ -265,6 +265,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
             menu.addItem(self.viewItem(for: filters, enabled: true))
+            menu.addItem(self.sortMenuItem(selected: session.settings.menuSortKey))
             menu.addItem(.separator())
         }
 
@@ -388,6 +389,32 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         }
 
         return menu
+    }
+
+    private func sortMenuItem(selected: RepositorySortKey) -> NSMenuItem {
+        let item = NSMenuItem(title: "Sort", action: nil, keyEquivalent: "")
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        for key in RepositorySortKey.menuCases {
+            let entry = NSMenuItem(
+                title: key.menuLabel,
+                action: #selector(self.selectSort(_:)),
+                keyEquivalent: "")
+            entry.target = self
+            entry.representedObject = key.rawValue
+            entry.state = key == selected ? .on : .off
+            menu.addItem(entry)
+        }
+        item.submenu = menu
+        return item
+    }
+
+    @objc private func selectSort(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+              let key = RepositorySortKey(rawValue: raw) else { return }
+        self.appState.session.settings.menuSortKey = key
+        self.appState.persistSettings()
+        self.menuFiltersChanged()
     }
 
     private func actionItem(
