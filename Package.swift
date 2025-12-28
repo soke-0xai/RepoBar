@@ -41,11 +41,12 @@ let package = Package(
                 ]),
                 ]),
         .executableTarget(
-            name: "repobarcli",
+            name: "repobar",
             dependencies: [
                 .product(name: "Commander", package: "Commander"),
                 "RepoBarCore",
             ],
+            path: "Sources/repobarcli",
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
             ]),
@@ -57,8 +58,9 @@ let package = Package(
                 .enableExperimentalFeature("SwiftTesting"),
             ]),
         .testTarget(
-            name: "repobarcliTests",
-            dependencies: ["repobarcli"],
+            name: "repobarTests",
+            dependencies: ["repobar"],
+            path: "Tests/repobarcliTests",
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
                 .enableExperimentalFeature("SwiftTesting"),

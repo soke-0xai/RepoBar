@@ -15,7 +15,7 @@ if [ "${SKIP_BUILD:-0}" -eq 1 ]; then
 else
   log "==> Building ${APP_NAME} (${CONFIGURATION})"
   swift build -c "${CONFIGURATION}"
-  swift build -c "${CONFIGURATION}" --product repobarcli
+  swift build -c "${CONFIGURATION}" --product repobar
 fi
 
 BUILD_DIR="${ROOT_DIR}/.build/${CONFIGURATION}"
@@ -42,11 +42,11 @@ mkdir -p "${APP_BUNDLE}/Contents/MacOS" "${APP_BUNDLE}/Contents/Frameworks"
 cp "${APP_EXECUTABLE}" "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 chmod +x "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}" || true
 
-CLI_BINARY="${BUILD_DIR}/repobarcli"
+CLI_BINARY="${BUILD_DIR}/repobar"
 if [ -f "${CLI_BINARY}" ]; then
-  log "==> Installing repobarcli"
-  cp "${CLI_BINARY}" "${APP_BUNDLE}/Contents/MacOS/repobarcli"
-  chmod +x "${APP_BUNDLE}/Contents/MacOS/repobarcli" || true
+  log "==> Installing repobar"
+  cp "${CLI_BINARY}" "${APP_BUNDLE}/Contents/MacOS/repobar"
+  chmod +x "${APP_BUNDLE}/Contents/MacOS/repobar" || true
 fi
 
 RESOURCE_BUNDLE="${BUILD_DIR}/${APP_NAME}_${APP_NAME}.bundle"

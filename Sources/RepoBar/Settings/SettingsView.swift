@@ -248,7 +248,7 @@ struct GeneralSettingsView: View {
 
             Section {
                 Picker("Repositories shown", selection: self.$session.settings.repoDisplayLimit) {
-                    ForEach([3, 5, 8, 12], id: \.self) { Text("\($0)").tag($0) }
+                    ForEach([3, 6, 8, 12], id: \.self) { Text("\($0)").tag($0) }
                 }
                 Picker("Menu sort", selection: self.$session.settings.menuSortKey) {
                     ForEach(RepositorySortKey.menuCases, id: \.self) { sortKey in

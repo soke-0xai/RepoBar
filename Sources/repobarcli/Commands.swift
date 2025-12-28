@@ -4,7 +4,7 @@ import RepoBarCore
 
 @MainActor
 struct RepoBarRoot: ParsableCommand {
-    nonisolated static let commandName = "repobarcli"
+    nonisolated static let commandName = "repobar"
 
     static var commandDescription: CommandDescription {
         CommandDescription(

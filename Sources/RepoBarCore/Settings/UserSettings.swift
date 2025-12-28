@@ -2,7 +2,7 @@ import Foundation
 
 public struct UserSettings: Equatable, Codable {
     public var showContributionHeader = true
-    public var repoDisplayLimit: Int = 5
+    public var repoDisplayLimit: Int = 6
     public var showForks = false
     public var showArchived = false
     public var refreshInterval: RefreshInterval = .fiveMinutes

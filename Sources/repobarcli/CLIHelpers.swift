@@ -97,7 +97,7 @@ enum CLIError: Error {
     var message: String {
         switch self {
         case .notAuthenticated:
-            "No stored login. Run `repobarcli login` first."
+            "No stored login. Run `repobar login` first."
         case .openFailed:
             "Failed to open the browser."
         case let .unknownCommand(command):
@@ -232,16 +232,16 @@ func printHelp(_ target: HelpTarget) {
     let text = switch target {
     case .root:
         """
-        repobarcli - list repositories by activity, issues, PRs, stars
+        repobar - list repositories by activity, issues, PRs, stars
 
         Usage:
-          repobarcli [repos] [--limit N] [--age DAYS] [--release] [--event] [--forks] [--archived] [--pinned-only] [--only-with VAL] [--json] [--plain] [--sort KEY]
-          repobarcli repo <owner/name> [--traffic] [--heatmap] [--release] [--json] [--plain]
-          repobarcli refresh [--json] [--plain]
-          repobarcli contributions [--login USER] [--json] [--plain]
-          repobarcli login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
-          repobarcli logout
-          repobarcli status [--json]
+          repobar [repos] [--limit N] [--age DAYS] [--release] [--event] [--forks] [--archived] [--pinned-only] [--only-with VAL] [--json] [--plain] [--sort KEY]
+          repobar repo <owner/name> [--traffic] [--heatmap] [--release] [--json] [--plain]
+          repobar refresh [--json] [--plain]
+          repobar contributions [--login USER] [--json] [--plain]
+          repobar login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
+          repobar logout
+          repobar status [--json]
 
         Options:
           --limit N    Max repositories to fetch (default: all accessible)
@@ -260,10 +260,10 @@ func printHelp(_ target: HelpTarget) {
         """
     case .repos:
         """
-        repobarcli repos - list repositories
+        repobar repos - list repositories
 
         Usage:
-          repobarcli repos [--limit N] [--age DAYS] [--release] [--event] [--forks] [--archived] [--pinned-only] [--only-with VAL] [--json] [--plain] [--sort KEY]
+          repobar repos [--limit N] [--age DAYS] [--release] [--event] [--forks] [--archived] [--pinned-only] [--only-with VAL] [--json] [--plain] [--sort KEY]
 
         Options:
           --limit N    Max repositories to fetch (default: all accessible)
@@ -281,10 +281,10 @@ func printHelp(_ target: HelpTarget) {
         """
     case .repo:
         """
-        repobarcli repo - fetch a repository summary
+        repobar repo - fetch a repository summary
 
         Usage:
-          repobarcli repo <owner/name> [--traffic] [--heatmap] [--release] [--json] [--plain]
+          repobar repo <owner/name> [--traffic] [--heatmap] [--release] [--json] [--plain]
 
         Options:
           --traffic   Include traffic stats
@@ -296,10 +296,10 @@ func printHelp(_ target: HelpTarget) {
         """
     case .refresh:
         """
-        repobarcli refresh - refresh pinned repositories
+        repobar refresh - refresh pinned repositories
 
         Usage:
-          repobarcli refresh [--json] [--plain]
+          repobar refresh [--json] [--plain]
 
         Options:
           --json      Output JSON instead of formatted text
@@ -308,10 +308,10 @@ func printHelp(_ target: HelpTarget) {
         """
     case .contributions:
         """
-        repobarcli contributions - fetch contribution heatmap
+        repobar contributions - fetch contribution heatmap
 
         Usage:
-          repobarcli contributions [--login USER] [--json] [--plain]
+          repobar contributions [--login USER] [--json] [--plain]
 
         Options:
           --login USER  GitHub login (defaults to current user)
@@ -321,24 +321,24 @@ func printHelp(_ target: HelpTarget) {
         """
     case .login:
         """
-        repobarcli login - sign in via browser OAuth
+        repobar login - sign in via browser OAuth
 
         Usage:
-          repobarcli login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
+          repobar login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
         """
     case .logout:
         """
-        repobarcli logout - clear stored credentials
+        repobar logout - clear stored credentials
 
         Usage:
-          repobarcli logout
+          repobar logout
         """
     case .status:
         """
-        repobarcli status - show login state
+        repobar status - show login state
 
         Usage:
-          repobarcli status [--json]
+          repobar status [--json]
         """
     }
     print(text)

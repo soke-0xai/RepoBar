@@ -15,15 +15,15 @@ pnpm codegen          # (optional) run Apollo codegen once schema access is set
 
 Requirements: Swift 6.2 toolchain, Xcode 26+, `swiftformat`, `swiftlint`, `pnpm` (v10+), and `apollo-ios` CLI if you run codegen.
 
-## CLI (repobarcli)
+## CLI (repobar)
 
 RepoBar ships a bundled CLI for quick repo overviews.
 
 ```bash
-pnpm repobarcli login
-pnpm repobarcli repos --release
-pnpm repobarcli repos --release --plain   # no colors, no links, no URLs
-pnpm repobarcli repos --release --json    # machine output
+pnpm repobar login
+pnpm repobar repos --release
+pnpm repobar repos --release --plain   # no colors, no links, no URLs
+pnpm repobar repos --release --json    # machine output
 ```
 
 ## Auth setup

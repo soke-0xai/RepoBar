@@ -1,5 +1,5 @@
 import Foundation
-@testable import repobarcli
+@testable import repobar
 import RepoBarCore
 import Testing
 

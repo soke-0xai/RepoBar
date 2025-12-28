@@ -297,30 +297,43 @@ struct MenuRepoFiltersView: View {
     @Bindable var session: Session
 
     var body: some View {
-        HStack(spacing: 8) {
-            Picker("Scope", selection: self.$session.menuRepoScope) {
-                ForEach(MenuRepoScope.allCases, id: \.self) { scope in
-                    Text(scope.label).tag(scope)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Picker("Scope", selection: self.$session.menuRepoScope) {
+                    ForEach(MenuRepoScope.allCases, id: \.self) { scope in
+                        Text(scope.label).tag(scope)
+                    }
                 }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .controlSize(.mini)
-            .fixedSize()
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .controlSize(.mini)
+                .fixedSize()
 
-            Spacer(minLength: 6)
+                Spacer(minLength: 6)
 
-            Spacer(minLength: 6)
-
-            Picker("Filter", selection: self.$session.menuRepoFilter) {
-                ForEach(MenuRepoFilter.allCases, id: \.self) { filter in
-                    Text(filter.label).tag(filter)
+                Picker("Filter", selection: self.$session.menuRepoFilter) {
+                    ForEach(MenuRepoFilter.allCases, id: \.self) { filter in
+                        Text(filter.label).tag(filter)
+                    }
                 }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .controlSize(.mini)
+                .fixedSize()
             }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .controlSize(.mini)
-            .fixedSize()
+
+            HStack(spacing: 8) {
+                Picker("Sort", selection: self.$session.settings.menuSortKey) {
+                    ForEach(RepositorySortKey.menuCases, id: \.self) { sortKey in
+                        Label(sortKey.menuLabel, systemImage: sortKey.menuSymbolName)
+                            .tag(sortKey)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .controlSize(.mini)
+                .fixedSize()
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onChange(of: self.session.menuRepoScope) { _, _ in

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CLI_PATH="${1:-$ROOT_DIR/.build/debug/repobarcli}"
+CLI_PATH="${1:-$ROOT_DIR/.build/debug/repobar}"
 
 log() { printf '%s\n' "[$(date '+%H:%M:%S')] $*"; }
 
@@ -66,9 +66,9 @@ if [[ "$IDENTITY" == *"Developer ID Application"* ]]; then
   timestamp_arg="--timestamp"
 fi
 
-IDENTIFIER="com.steipete.repobarcli"
+IDENTIFIER="com.steipete.repobar.cli"
 
-log "Signing repobarcli ($CLI_PATH) with $IDENTITY"
+log "Signing repobar ($CLI_PATH) with $IDENTITY"
 xattr -cr "$CLI_PATH" 2>/dev/null || true
 codesign --force --options runtime "$timestamp_arg" --identifier "$IDENTIFIER" --sign "$IDENTITY" "$CLI_PATH"
 codesign --verify --verbose=2 "$CLI_PATH"

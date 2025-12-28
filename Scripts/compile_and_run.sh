@@ -34,7 +34,7 @@ kill_existing
 
 log "==> swift build"
 swift build -q
-swift build -q --product repobarcli
+swift build -q --product repobar
 
 log "==> swift test"
 swift test -q
