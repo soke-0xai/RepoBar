@@ -466,8 +466,9 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private func refreshMenuViewHeights(in menu: NSMenu) {
         let width = self.menuWidth(for: menu)
         for item in menu.items {
-            guard let view = item.view as? MenuItemMeasuring else { continue }
-            let height = view.measuredHeight(width: width)
+            guard let view = item.view as? NSView,
+                  let measuring = item.view as? MenuItemMeasuring else { continue }
+            let height = measuring.measuredHeight(width: width)
             view.frame = NSRect(origin: .zero, size: NSSize(width: width, height: height))
         }
     }
@@ -490,9 +491,12 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             .map { RepositoryViewModel(repo: $0) }
         return repos.sorted { lhs, rhs in
             switch (lhs.sortOrder, rhs.sortOrder) {
-            case let (left?, right?): left < right
-            case (.none, .some): false
-            case (.some, .none): true
+            case let (left?, right?):
+                return left < right
+            case (.none, .some):
+                return false
+            case (.some, .none):
+                return true
             default:
                 return RepositorySort.isOrderedBefore(lhs.source, rhs.source, sortKey: .activity)
             }
@@ -541,14 +545,17 @@ final class AppDelegateState {
     weak var statusBarController: StatusBarController?
 }
 
+@MainActor
 private protocol MenuItemMeasuring: AnyObject {
     func measuredHeight(width: CGFloat) -> CGFloat
 }
 
+@MainActor
 private protocol MenuItemHighlighting: AnyObject {
     func setHighlighted(_ highlighted: Bool)
 }
 
+@MainActor
 private final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuring, MenuItemHighlighting {
     private let makeContent: (Bool) -> AnyView
     private var isHighlighted = false
@@ -564,6 +571,12 @@ private final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuri
     init(makeContent: @escaping (Bool) -> AnyView) {
         self.makeContent = makeContent
         super.init(rootView: makeContent(false))
+    }
+
+    @available(*, unavailable)
+    required init(rootView: AnyView) {
+        self.makeContent = { _ in rootView }
+        super.init(rootView: rootView)
     }
 
     @available(*, unavailable)
