@@ -88,6 +88,9 @@ final class AppState {
     private let settingsStore = SettingsStore()
     private var lastMenuRefresh: Date?
     private let menuRefreshInterval: TimeInterval = 30
+    private var refreshTask: Task<Void, Never>?
+    private var refreshTaskToken = UUID()
+    private let hydrateConcurrencyLimit = 4
 
     // Default GitHub App values for convenience login from the main window.
     private let defaultClientID = RepoBarAuthDefaults.clientID
@@ -104,7 +107,7 @@ final class AppState {
             }
         }
         self.refreshScheduler.configure(interval: self.session.settings.refreshInterval.seconds) { [weak self] in
-            Task { await self?.refresh() }
+            self?.requestRefresh()
         }
         Task { await DiagnosticsLogger.shared.setEnabled(self.session.settings.diagnosticsEnabled) }
     }
@@ -115,7 +118,23 @@ final class AppState {
             return
         }
         self.lastMenuRefresh = now
-        self.refreshScheduler.forceRefresh()
+        self.requestRefresh(cancelInFlight: true)
+    }
+
+    func requestRefresh(cancelInFlight: Bool = false) {
+        if cancelInFlight {
+            self.refreshTask?.cancel()
+        }
+        guard cancelInFlight || self.refreshTask == nil else { return }
+        let token = UUID()
+        self.refreshTaskToken = token
+        self.refreshTask = Task { [weak self] in
+            await self?.refresh()
+            await MainActor.run {
+                guard let self, self.refreshTaskToken == token else { return }
+                self.refreshTask = nil
+            }
+        }
     }
 
     /// Starts the OAuth flow using the default GitHub App credentials, invoked from the logged-out prompt.
@@ -148,6 +167,7 @@ final class AppState {
 
     func refresh() async {
         do {
+            if Task.isCancelled { return }
             if self.auth.loadTokens() == nil {
                 await MainActor.run {
                     self.session.repositories = []
@@ -162,10 +182,12 @@ final class AppState {
                 }
             }
             let repos = try await self.fetchActivityRepos()
+            try Task.checkCancellation()
             let visible = self.applyVisibilityFilters(to: repos)
             let ordered = self.applyPinnedOrder(to: visible)
             let targets = self.selectMenuTargets(from: ordered)
             let hydrated = await self.hydrateMenuTargets(targets)
+            try Task.checkCancellation()
             let merged = self.mergeHydrated(hydrated, into: ordered)
             let final = self.applyPinnedOrder(to: merged)
             await self.updateSession(with: final)
@@ -218,18 +240,26 @@ final class AppState {
     }
 
     private func hydrateMenuTargets(_ repos: [Repository]) async -> [Repository] {
-        await withTaskGroup(of: Repository?.self) { group in
-            for repo in repos {
-                group.addTask { [github] in
-                    try? await github.fullRepository(owner: repo.owner, name: repo.name)
+        guard !repos.isEmpty else { return [] }
+        let limit = max(1, min(self.hydrateConcurrencyLimit, repos.count))
+        var detailed: [Repository] = []
+        for batch in repos.chunked(into: limit) {
+            if Task.isCancelled { break }
+            let batchResult = await withTaskGroup(of: Repository?.self) { group in
+                for repo in batch {
+                    group.addTask { [github] in
+                        try? await github.fullRepository(owner: repo.owner, name: repo.name)
+                    }
                 }
+                var batchOutput: [Repository] = []
+                for await repo in group {
+                    if let repo { batchOutput.append(repo) }
+                }
+                return batchOutput
             }
-            var detailed: [Repository] = []
-            for await repo in group {
-                if let repo { detailed.append(repo) }
-            }
-            return detailed
+            detailed.append(contentsOf: batchResult)
         }
+        return detailed
     }
 
     private func mergeHydrated(_ detailed: [Repository], into repos: [Repository]) -> [Repository] {
@@ -412,4 +442,18 @@ enum AccountState: Equatable {
     case loggedOut
     case loggingIn
     case loggedIn(UserIdentity)
+}
+
+private extension Array {
+    func chunked(into size: Int) -> [ArraySlice<Element>] {
+        guard size > 0 else { return [self[...]] }
+        var result: [ArraySlice<Element>] = []
+        var index = startIndex
+        while index < endIndex {
+            let nextIndex = self.index(index, offsetBy: size, limitedBy: endIndex) ?? endIndex
+            result.append(self[index..<nextIndex])
+            index = nextIndex
+        }
+        return result
+    }
 }

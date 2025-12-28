@@ -23,6 +23,7 @@ public actor GitHubClient {
     private var latestRestRateLimit: RateLimitSnapshot?
     private var repoDetailStore = RepoDetailStore()
     private let repoDetailCachePolicy = RepoDetailCachePolicy.default
+    private var inflightRepoDetails: [String: Task<Repository, Error>] = [:]
 
     public init() {}
 
@@ -119,6 +120,20 @@ public actor GitHubClient {
     }
 
     public func fullRepository(owner: String, name: String) async throws -> Repository {
+        let key = "\(owner.lowercased())/\(name.lowercased())"
+        if let task = self.inflightRepoDetails[key] {
+            return try await task.value
+        }
+        let task = Task { [weak self] () throws -> Repository in
+            guard let self else { throw CancellationError() }
+            return try await self.fullRepositoryInternal(owner: owner, name: name)
+        }
+        self.inflightRepoDetails[key] = task
+        defer { self.inflightRepoDetails[key] = nil }
+        return try await task.value
+    }
+
+    private func fullRepositoryInternal(owner: String, name: String) async throws -> Repository {
         var accumulator = RepoErrorAccumulator()
 
         let details: RepoItem

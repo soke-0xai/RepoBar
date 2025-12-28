@@ -31,7 +31,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     // MARK: - Menu actions
 
     @objc func refreshNow() {
-        self.appState.refreshScheduler.forceRefresh()
+        self.appState.requestRefresh(cancelInFlight: true)
     }
 
     @objc func openPreferences() {
@@ -162,7 +162,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         pins.move(fromOffsets: IndexSet(integer: currentIndex), toOffset: target > currentIndex ? target + 1 : target)
         self.appState.session.settings.pinnedRepositories = pins
         self.appState.persistSettings()
-        Task { await self.appState.refresh() }
+        self.appState.requestRefresh(cancelInFlight: true)
     }
 
     func menuWillOpen(_ menu: NSMenu) {

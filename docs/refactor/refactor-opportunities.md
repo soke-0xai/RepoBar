@@ -59,7 +59,7 @@ Last updated: 2025-12-28
 - Define cache freshness with explicit TTLs and stale flags.
 - Expose cache state to UI (stale vs fresh).
 
-### [ ] 6) Request coordination
+### [x] 6) Request coordination
 - Add fetch coalescing to prevent duplicate requests per repo.
 - Cancel previous refresh tasks on new menu open.
 - Rate-limit hydration fan-out (TaskGroup with max concurrency).

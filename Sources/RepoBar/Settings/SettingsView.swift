@@ -266,12 +266,12 @@ struct GeneralSettingsView: View {
                 Toggle("Include forked repositories", isOn: self.$session.settings.showForks)
                     .onChange(of: self.session.settings.showForks) { _, _ in
                         self.appState.persistSettings()
-                        Task { await self.appState.refresh() }
+                        self.appState.requestRefresh(cancelInFlight: true)
                     }
                 Toggle("Include archived repositories", isOn: self.$session.settings.showArchived)
                     .onChange(of: self.session.settings.showArchived) { _, _ in
                         self.appState.persistSettings()
-                        Task { await self.appState.refresh() }
+                        self.appState.requestRefresh(cancelInFlight: true)
                     }
                 } header: {
                 Text("Repositories")
@@ -318,7 +318,7 @@ struct AdvancedSettingsView: View {
                     self.appState.persistSettings()
                     Task { @MainActor in
                         self.appState.refreshScheduler.configure(interval: newValue.seconds) { [weak appState] in
-                            Task { await appState?.refresh() }
+                            appState?.requestRefresh()
                         }
                     }
                 }
@@ -547,11 +547,11 @@ struct DebugSettingsView: View {
                 Button("Clear release cache") {
                     Task {
                         await self.appState.github.clearCache()
-                        await self.appState.refresh()
+                        self.appState.requestRefresh(cancelInFlight: true)
                     }
                 }
                 Button("Force refresh") {
-                    self.appState.refreshScheduler.forceRefresh()
+                    self.appState.requestRefresh(cancelInFlight: true)
                 }
                 Toggle("Show diagnostics overlay", isOn: self.$session.settings.diagnosticsEnabled)
                     .onChange(of: self.session.settings.diagnosticsEnabled) { _, newValue in

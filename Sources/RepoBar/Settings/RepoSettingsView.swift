@@ -71,7 +71,7 @@ struct RepoSettingsView: View {
                 Spacer()
 
                 Button("Refresh Now") {
-                    Task { await self.appState.refresh() }
+                    self.appState.requestRefresh(cancelInFlight: true)
                 }
             }
         }
