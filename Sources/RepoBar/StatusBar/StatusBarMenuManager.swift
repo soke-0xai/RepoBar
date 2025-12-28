@@ -323,7 +323,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         menu.delegate = self
 
         menu.addItem(self.actionItem(
-            title: "Open Repository",
+            title: "Open \(repo.title)",
             action: #selector(self.openRepo),
             represented: repo.title,
             systemImage: "folder"))
