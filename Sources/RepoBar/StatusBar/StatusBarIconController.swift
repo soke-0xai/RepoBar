@@ -10,6 +10,16 @@ final class StatusBarIconController {
         button.image = icon
         button.alternateImage = icon // ensure highlighted state also uses template tinting
         button.image?.isTemplate = true // let macOS tint for native look
+
+        // Fallback: if SF Symbols are unavailable (or image rendering fails), show a short title so the item
+        // is never invisible (width 0).
+        if icon == nil {
+            button.title = "RB"
+            button.imagePosition = .imageLeading
+        } else {
+            button.title = ""
+            button.imagePosition = .imageOnly
+        }
     }
 
     private func aggregateStatus(for session: Session) -> AggregateStatus {
