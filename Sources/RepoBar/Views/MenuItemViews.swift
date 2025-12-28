@@ -304,6 +304,9 @@ struct MenuRepoFiltersView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {
+                Image(systemName: "tray.full")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 Picker("Scope", selection: self.$session.menuRepoScope) {
                     ForEach(MenuRepoScope.allCases, id: \.self) { scope in
                         Text(scope.label).tag(scope)
@@ -316,6 +319,9 @@ struct MenuRepoFiltersView: View {
 
                 Spacer(minLength: 6)
 
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 Picker("Filter", selection: self.$session.menuRepoFilter) {
                     ForEach(MenuRepoFilter.allCases, id: \.self) { filter in
                         Text(filter.label).tag(filter)
@@ -328,6 +334,9 @@ struct MenuRepoFiltersView: View {
             }
 
             HStack(spacing: 8) {
+                Image(systemName: "arrow.up.arrow.down")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 Picker("Sort", selection: self.$session.settings.menuSortKey) {
                     ForEach(RepositorySortKey.menuCases, id: \.self) { sortKey in
                         Label(sortKey.menuLabel, systemImage: sortKey.menuSymbolName)
@@ -338,6 +347,7 @@ struct MenuRepoFiltersView: View {
                 .pickerStyle(.segmented)
                 .controlSize(.mini)
                 .fixedSize()
+                Spacer(minLength: 0)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
