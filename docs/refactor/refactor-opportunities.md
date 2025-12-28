@@ -91,7 +91,7 @@ Last updated: 2025-12-28
 - Single `HeatmapLayout` utility for spacing + inset rules.
 - Reuse for header, repo cards, submenu heatmaps.
 
-### [ ] 12) Highlight + focus handling
+### [x] 12) Highlight + focus handling
 - Centralize highlight styling and focus ring suppression.
 - Ensure focus behavior is consistent across NSMenu and SwiftUI items.
 

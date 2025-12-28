@@ -65,7 +65,7 @@ final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuring, Menu
 
     override var allowsVibrancy: Bool { true }
     override var focusRingType: NSFocusRingType {
-        get { .none }
+        get { MenuFocusRingStyle.type }
         set { }
     }
 
