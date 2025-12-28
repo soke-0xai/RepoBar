@@ -52,7 +52,7 @@ struct MenuContentViewModelTests {
                 traffic: nil,
                 heatmap: []
             )
-        ].map { RepositoryViewModel(repo: $0) }
+        ].map { RepositoryDisplayModel(repo: $0) }
 
         let ordered = TestableRepoGrid.sortedForTest(repos)
         #expect(ordered.map(\.id) == ["2", "1", "3"])
@@ -61,7 +61,7 @@ struct MenuContentViewModelTests {
     @Test
     func moveStepCalculatesBounds() {
         let repos = [
-            RepositoryViewModel(repo: Repository(
+            RepositoryDisplayModel(repo: Repository(
                 id: "1",
                 name: "A",
                 owner: "me",
@@ -76,7 +76,7 @@ struct MenuContentViewModelTests {
                 traffic: nil,
                 heatmap: []
             )),
-            RepositoryViewModel(repo: Repository(
+            RepositoryDisplayModel(repo: Repository(
                 id: "2",
                 name: "B",
                 owner: "me",
@@ -103,7 +103,7 @@ struct MenuContentViewModelTests {
 }
 
 private enum TestableRepoGrid {
-    static func sortedForTest(_ repos: [RepositoryViewModel]) -> [RepositoryViewModel] {
+    static func sortedForTest(_ repos: [RepositoryDisplayModel]) -> [RepositoryDisplayModel] {
         repos.sorted { lhs, rhs in
             switch (lhs.sortOrder, rhs.sortOrder) {
             case let (left?, right?): left < right
@@ -115,8 +115,8 @@ private enum TestableRepoGrid {
     }
 
     static func moveStepForTest(
-        repo: RepositoryViewModel,
-        in ordered: [RepositoryViewModel],
+        repo: RepositoryDisplayModel,
+        in ordered: [RepositoryDisplayModel],
         direction: Int,
         move: (IndexSet, Int) -> Void
     ) {

@@ -11,7 +11,7 @@ struct RepositoryMappingTests {
             Repository(id: "2", name: "a", owner: "z", sortOrder: 0, error: nil, rateLimitedUntil: nil, ciStatus: .unknown, openIssues: 0, openPulls: 0, latestRelease: nil, latestActivity: nil, traffic: nil, heatmap: []),
             Repository(id: "3", name: "c", owner: "z", sortOrder: nil, error: nil, rateLimitedUntil: nil, ciStatus: .unknown, openIssues: 0, openPulls: 0, latestRelease: nil, latestActivity: nil, traffic: nil, heatmap: [])
         ]
-        let viewModels = repos.map { RepositoryViewModel(repo: $0) }
+        let viewModels = repos.map { RepositoryDisplayModel(repo: $0) }
         let sorted = TestableRepoGrid.sortedForTest(viewModels)
         let titles = sorted.map(\.title)
         #expect(titles == ["z/a", "z/b", "z/c"])
@@ -34,7 +34,7 @@ struct RepositoryMappingTests {
             traffic: TrafficStats(uniqueVisitors: 10, uniqueCloners: 3),
             heatmap: []
         )
-        let vm = RepositoryViewModel(repo: repo, now: Date())
+        let vm = RepositoryDisplayModel(repo: repo, now: Date())
         #expect(vm.error == "Rate limited")
         #expect(vm.rateLimitedUntil != nil)
         #expect(vm.trafficVisitors == 10)
@@ -44,7 +44,7 @@ struct RepositoryMappingTests {
 
 // Reuse helper from MenuContentViewModelTests
 private enum TestableRepoGrid {
-    static func sortedForTest(_ repos: [RepositoryViewModel]) -> [RepositoryViewModel] {
+    static func sortedForTest(_ repos: [RepositoryDisplayModel]) -> [RepositoryDisplayModel] {
         repos.sorted { lhs, rhs in
             switch (lhs.sortOrder, rhs.sortOrder) {
             case let (left?, right?): left < right

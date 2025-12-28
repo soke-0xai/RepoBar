@@ -3,7 +3,7 @@ import Foundation
 import RepoBarCore
 import Testing
 
-struct RepositoryViewModelTests {
+struct RepositoryDisplayModelTests {
     @Test
     func mapsReleaseAndActivity() {
         let release = Release(
@@ -34,8 +34,8 @@ struct RepositoryViewModelTests {
             traffic: TrafficStats(uniqueVisitors: 5, uniqueCloners: 2),
             heatmap: []
         )
-        let vm = RepositoryViewModel(repo: repo, now: Date())
-        #expect(vm.latestRelease == release.name)
+        let vm = RepositoryDisplayModel(repo: repo, now: Date())
+        #expect(vm.releaseLine?.contains(release.name) == true)
         #expect(vm.activityLine?.contains("alice") == true)
         #expect(vm.activityEvents.count == 1)
         #expect(vm.issues == 2)
