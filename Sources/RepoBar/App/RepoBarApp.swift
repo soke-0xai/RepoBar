@@ -311,7 +311,8 @@ final class AppState {
         visibleCount: Int,
         token: UUID
     ) {
-        guard let limit = self.session.settings.repoList.displayLimit, limit > 0 else { return }
+        let limit = self.session.settings.repoList.displayLimit
+        guard limit > 0 else { return }
         let startIndex = min(visibleCount, repos.count)
         let prefetchTargets = Array(repos.dropFirst(startIndex).prefix(limit))
         guard prefetchTargets.isEmpty == false else { return }
