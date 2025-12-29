@@ -43,6 +43,44 @@ struct RepositoryPipelineTests {
         #expect(result.map(\.fullName) == ["a/recent"])
     }
 
+    @Test("Hidden scope returns only hidden repositories")
+    func hiddenScopeFiltersHidden() {
+        let repos = [
+            Self.makeRepo("a/one", issues: 0, pulls: 0),
+            Self.makeRepo("b/two", issues: 0, pulls: 0),
+            Self.makeRepo("c/three", issues: 0, pulls: 0)
+        ]
+        let query = RepositoryQuery(
+            scope: .hidden,
+            hidden: Set(["b/two"])
+        )
+        let result = RepositoryPipeline.apply(repos, query: query)
+        #expect(result.map(\.fullName) == ["b/two"])
+    }
+
+    @Test("Pinned scope filters to pinned list")
+    func pinnedScopeFiltersPinned() {
+        let repos = [
+            Self.makeRepo("a/one", issues: 0, pulls: 0),
+            Self.makeRepo("b/two", issues: 0, pulls: 0),
+            Self.makeRepo("c/three", issues: 0, pulls: 0)
+        ]
+        let query = RepositoryQuery(
+            scope: .pinned,
+            pinned: ["c/three", "a/one"]
+        )
+        let result = RepositoryPipeline.apply(repos, query: query)
+        #expect(result.map(\.fullName) == ["c/three", "a/one"])
+    }
+
+    @Test("Default age cutoff applies only to all scope")
+    func ageCutoffDefaults() {
+        let now = Date()
+        #expect(RepositoryQueryDefaults.ageCutoff(now: now, scope: .pinned) == nil)
+        #expect(RepositoryQueryDefaults.ageCutoff(now: now, scope: .hidden) == nil)
+        #expect(RepositoryQueryDefaults.ageCutoff(now: now, scope: .all) != nil)
+    }
+
     private static func makeRepo(
         _ fullName: String,
         issues: Int,

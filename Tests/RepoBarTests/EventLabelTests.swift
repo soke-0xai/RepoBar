@@ -112,4 +112,48 @@ struct EventLabelTests {
         #expect(activity.metadata?.label == "PR merged: #42: Ship it")
         #expect(activity.metadata?.deepLink?.absoluteString == "https://example.com/pr/42")
     }
+
+    @Test
+    func activityMetadataIncludesReleaseTag() {
+        let event = RepoEvent(
+            type: "ReleaseEvent",
+            actor: EventActor(login: "octo", avatarUrl: nil),
+            payload: EventPayload(
+                action: "published",
+                comment: nil,
+                issue: nil,
+                pullRequest: nil,
+                release: EventRelease(
+                    htmlUrl: URL(string: "https://example.com/releases/v1.0.0")!,
+                    tagName: "v1.0.0",
+                    name: nil
+                )
+            ),
+            createdAt: Date()
+        )
+        let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
+        #expect(activity.metadata?.label == "Release published: v1.0.0")
+    }
+
+    @Test
+    func activityMetadataFormatsForkTarget() {
+        let event = RepoEvent(
+            type: "ForkEvent",
+            actor: EventActor(login: "octo", avatarUrl: nil),
+            payload: EventPayload(
+                action: nil,
+                comment: nil,
+                issue: nil,
+                pullRequest: nil,
+                release: nil,
+                forkee: EventForkee(
+                    htmlUrl: URL(string: "https://example.com/octo/fork")!,
+                    fullName: "octo/fork"
+                )
+            ),
+            createdAt: Date()
+        )
+        let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
+        #expect(activity.metadata?.label == "Forked → octo/fork")
+    }
 }

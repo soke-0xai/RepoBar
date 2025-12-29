@@ -124,16 +124,16 @@ Last updated: 2025-12-28
 
 ## Testing
 
-### [ ] 18) Pipeline tests
+### [x] 18) Pipeline tests
 - Filter logic (pinned vs hidden, include forks/archived).
 - Sort order (activity, issues, PRs, stars).
 - onlyWith (work/issues/prs) behavior.
 
-### [ ] 19) UI logic tests
+### [x] 19) UI logic tests
 - Heatmap range alignment for header + repo.
 - Menu selection with pinned + filters.
 
-### [ ] 20) Fixtures + regression
+### [x] 20) Fixtures + regression
 - Add fixtures for event mapping (PR merged, release tag, fork).
 - Use CLI fixtures for menu parity.
 

@@ -29,4 +29,17 @@ struct HeatmapFilterTests {
         #expect(filtered.count == 1)
         #expect(filtered.first?.date == recent)
     }
+
+    @Test
+    func alignedRangeStartsOnWeekBoundary() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.firstWeekday = 2
+
+        let now = calendar.date(from: DateComponents(year: 2025, month: 12, day: 20, hour: 12))!
+        let range = HeatmapFilter.alignedRange(span: .threeMonths, now: now, calendar: calendar)
+        let weekday = calendar.component(.weekday, from: range.start)
+        #expect(weekday == calendar.firstWeekday)
+        #expect(range.end == calendar.startOfDay(for: now))
+    }
 }
