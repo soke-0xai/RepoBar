@@ -53,6 +53,7 @@ enum RepoBarCLI {
         RepoCommand.commandName: RepoCommand.self,
         IssuesCommand.commandName: IssuesCommand.self,
         PullsCommand.commandName: PullsCommand.self,
+        LocalProjectsCommand.commandName: LocalProjectsCommand.self,
         RefreshCommand.commandName: RefreshCommand.self,
         ContributionsCommand.commandName: ContributionsCommand.self,
         LoginCommand.commandName: LoginCommand.self,

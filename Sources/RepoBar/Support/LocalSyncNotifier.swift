@@ -1,4 +1,5 @@
 import Foundation
+import RepoBarCore
 import UserNotifications
 
 actor LocalSyncNotifier {

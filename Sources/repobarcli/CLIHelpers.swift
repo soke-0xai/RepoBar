@@ -188,6 +188,7 @@ enum HelpTarget: String {
     case repo
     case issues
     case pulls
+    case local
     case refresh
     case contributions
     case login
@@ -218,6 +219,8 @@ enum HelpTarget: String {
             return .issues
         case PullsCommand.commandName:
             return .pulls
+        case LocalProjectsCommand.commandName:
+            return .local
         case RefreshCommand.commandName:
             return .refresh
         case ContributionsCommand.commandName:
@@ -377,6 +380,22 @@ func printHelp(_ target: HelpTarget) {
 
         Usage:
           repobar status [--json]
+        """
+    case .local:
+        """
+        repobar local - scan local project folder for Git repositories
+
+        Usage:
+          repobar local [--root PATH] [--depth N] [--sync] [--limit N] [--json] [--plain]
+
+        Options:
+          --root PATH  Project folder to scan (defaults to settings value, then ~/Projects)
+          --depth N    Max scan depth (default: 2)
+          --sync       Fast-forward pull clean repos that are behind
+          --limit N    Limit processed repos (default: all)
+          --json       Output JSON instead of formatted text
+          --plain      Plain output (no colors)
+          --no-color   Disable color output
         """
     }
     print(text)

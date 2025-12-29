@@ -89,6 +89,7 @@ final class AppState {
     private let localRepoManager = LocalRepoManager()
     private let menuRefreshInterval: TimeInterval = 30
     private var refreshTask: Task<Void, Never>?
+    private var localProjectsTask: Task<Void, Never>?
     private var refreshTaskToken = UUID()
     private let hydrateConcurrencyLimit = 4
     private var prefetchTask: Task<Void, Never>?
@@ -171,6 +172,7 @@ final class AppState {
 
     func refresh() async {
         let localSettings = self.session.settings.localProjects
+        self.session.localProjectsScanInProgress = (localSettings.rootPath?.isEmpty == false)
         let localIndexTask = Task { await self.localRepoManager.snapshot(settings: localSettings) }
         do {
             if Task.isCancelled { return }
@@ -186,6 +188,7 @@ final class AppState {
                 let localIndex = await localIndexTask.value
                 await MainActor.run {
                     self.session.localRepoIndex = localIndex
+                    self.session.localProjectsScanInProgress = false
                 }
                 return
             }
@@ -208,6 +211,7 @@ final class AppState {
             await self.updateSession(with: final, now: now)
             await MainActor.run {
                 self.session.localRepoIndex = localIndex
+                self.session.localProjectsScanInProgress = false
             }
             self.prefetchMenuTargets(from: final, visibleCount: targets.count, token: self.refreshTaskToken)
             let reset = await self.github.rateLimitReset(now: now)
@@ -220,7 +224,33 @@ final class AppState {
             let localIndex = await localIndexTask.value
             await MainActor.run {
                 self.session.localRepoIndex = localIndex
+                self.session.localProjectsScanInProgress = false
                 self.session.lastError = error.userFacingMessage
+            }
+        }
+    }
+
+    func refreshLocalProjects(cancelInFlight: Bool = true) {
+        if cancelInFlight {
+            self.localProjectsTask?.cancel()
+        }
+
+        let settings = self.session.settings.localProjects
+        guard let rootPath = settings.rootPath,
+              rootPath.isEmpty == false
+        else {
+            self.session.localRepoIndex = .empty
+            self.session.localProjectsScanInProgress = false
+            return
+        }
+
+        self.session.localProjectsScanInProgress = true
+        self.localProjectsTask = Task { [weak self] in
+            guard let self else { return }
+            let localIndex = await self.localRepoManager.snapshot(settings: settings)
+            await MainActor.run {
+                self.session.localRepoIndex = localIndex
+                self.session.localProjectsScanInProgress = false
             }
         }
     }
@@ -504,6 +534,7 @@ final class Session {
     var heatmapRange: HeatmapRange = HeatmapFilter.range(span: .twelveMonths, now: Date(), alignToWeek: true)
     var menuRepoSelection: MenuRepoSelection = .all
     var localRepoIndex: LocalRepoIndex = .empty
+    var localProjectsScanInProgress = false
 }
 
 enum AccountState: Equatable {

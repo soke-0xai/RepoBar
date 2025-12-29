@@ -1,19 +1,38 @@
 import Foundation
-import RepoBarCore
 
-struct LocalRepoStatus: Equatable, Sendable {
-    let path: URL
-    let name: String
-    let fullName: String?
-    let branch: String
-    let isClean: Bool
-    let aheadCount: Int?
-    let behindCount: Int?
-    let syncState: LocalSyncState
+public struct LocalRepoStatus: Equatable, Sendable {
+    public let path: URL
+    public let name: String
+    public let fullName: String?
+    public let branch: String
+    public let isClean: Bool
+    public let aheadCount: Int?
+    public let behindCount: Int?
+    public let syncState: LocalSyncState
 
-    var displayName: String { self.fullName ?? self.name }
+    public init(
+        path: URL,
+        name: String,
+        fullName: String?,
+        branch: String,
+        isClean: Bool,
+        aheadCount: Int?,
+        behindCount: Int?,
+        syncState: LocalSyncState
+    ) {
+        self.path = path
+        self.name = name
+        self.fullName = fullName
+        self.branch = branch
+        self.isClean = isClean
+        self.aheadCount = aheadCount
+        self.behindCount = behindCount
+        self.syncState = syncState
+    }
 
-    var syncDetail: String {
+    public var displayName: String { self.fullName ?? self.name }
+
+    public var syncDetail: String {
         switch self.syncState {
         case .synced:
             "Up to date"
@@ -30,7 +49,7 @@ struct LocalRepoStatus: Equatable, Sendable {
         }
     }
 
-    var canAutoSync: Bool {
+    public var canAutoSync: Bool {
         self.isClean
             && self.syncState == .behind
             && (self.aheadCount ?? 0) == 0
@@ -38,7 +57,7 @@ struct LocalRepoStatus: Equatable, Sendable {
     }
 }
 
-enum LocalSyncState: String, Equatable, Sendable {
+public enum LocalSyncState: String, Equatable, Sendable {
     case synced
     case behind
     case ahead
@@ -46,7 +65,7 @@ enum LocalSyncState: String, Equatable, Sendable {
     case dirty
     case unknown
 
-    static func resolve(isClean: Bool, ahead: Int?, behind: Int?) -> LocalSyncState {
+    public static func resolve(isClean: Bool, ahead: Int?, behind: Int?) -> LocalSyncState {
         if !isClean { return .dirty }
         guard let ahead, let behind else { return .unknown }
         if ahead == 0, behind == 0 { return .synced }
@@ -56,7 +75,7 @@ enum LocalSyncState: String, Equatable, Sendable {
         return .unknown
     }
 
-    var symbolName: String {
+    public var symbolName: String {
         switch self {
         case .synced: "checkmark.square"
         case .behind: "arrow.down.square"
@@ -67,7 +86,7 @@ enum LocalSyncState: String, Equatable, Sendable {
         }
     }
 
-    var accessibilityLabel: String {
+    public var accessibilityLabel: String {
         switch self {
         case .synced: "Up to date"
         case .behind: "Behind"
@@ -79,16 +98,16 @@ enum LocalSyncState: String, Equatable, Sendable {
     }
 }
 
-struct LocalRepoIndex: Equatable {
-    var all: [LocalRepoStatus] = []
-    var byFullName: [String: LocalRepoStatus] = [:]
-    var byName: [String: [LocalRepoStatus]] = [:]
+public struct LocalRepoIndex: Equatable, Sendable {
+    public var all: [LocalRepoStatus] = []
+    public var byFullName: [String: LocalRepoStatus] = [:]
+    public var byName: [String: [LocalRepoStatus]] = [:]
 
-    static let empty = LocalRepoIndex()
+    public static let empty = LocalRepoIndex()
 
-    init() {}
+    public init() {}
 
-    init(statuses: [LocalRepoStatus]) {
+    public init(statuses: [LocalRepoStatus]) {
         self.all = statuses
         self.byFullName = Dictionary(uniqueKeysWithValues: statuses.compactMap { status in
             status.fullName.map { ($0, status) }
@@ -100,12 +119,12 @@ struct LocalRepoIndex: Equatable {
         self.byName = nameIndex
     }
 
-    func status(for repo: Repository) -> LocalRepoStatus? {
+    public func status(for repo: Repository) -> LocalRepoStatus? {
         if let exact = self.byFullName[repo.fullName] { return exact }
         return self.uniqueStatus(forName: repo.name)
     }
 
-    func status(forFullName fullName: String) -> LocalRepoStatus? {
+    public func status(forFullName fullName: String) -> LocalRepoStatus? {
         if let exact = self.byFullName[fullName] { return exact }
         let name = fullName.split(separator: "/").last.map(String.init)
         if let name { return self.uniqueStatus(forName: name) }

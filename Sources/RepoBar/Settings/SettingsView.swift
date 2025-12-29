@@ -400,7 +400,10 @@ struct AdvancedSettingsView: View {
         .formStyle(.grouped)
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        .onAppear { self.ensurePreferredTerminal() }
+        .onAppear {
+            self.ensurePreferredTerminal()
+            self.appState.refreshLocalProjects()
+        }
     }
 
     private func intervalLabel(_ interval: RefreshInterval) -> String {
@@ -416,15 +419,7 @@ struct AdvancedSettingsView: View {
         guard let path = self.session.settings.localProjects.rootPath,
               path.isEmpty == false
         else { return "Not set" }
-        let homeURL = FileManager.default.homeDirectoryForCurrentUser
-        let homePath = homeURL.resolvingSymlinksInPath().path
-        let resolvedPath = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
-        if resolvedPath.hasPrefix(homePath) {
-            let suffix = resolvedPath.dropFirst(homePath.count)
-            if suffix.isEmpty { return "~" }
-            return suffix.hasPrefix("/") ? "~\(suffix)" : "~/\(suffix)"
-        }
-        return resolvedPath
+        return PathFormatter.displayString(path)
     }
 
     private var projectFolderLabelColor: Color {
@@ -433,6 +428,7 @@ struct AdvancedSettingsView: View {
 
     private var localRepoSummary: String? {
         guard self.session.settings.localProjects.rootPath != nil else { return nil }
+        if self.session.localProjectsScanInProgress { return "Scanning…" }
         let total = self.session.localRepoIndex.all.count
         let matched = self.localMatchedRepoCount
         if total == 0 { return "No repositories found yet." }
@@ -477,14 +473,15 @@ struct AdvancedSettingsView: View {
         panel.allowsMultipleSelection = false
         panel.prompt = "Choose"
         if let existing = self.session.settings.localProjects.rootPath {
-            panel.directoryURL = URL(fileURLWithPath: existing, isDirectory: true)
+            panel.directoryURL = URL(fileURLWithPath: PathFormatter.expandTilde(existing), isDirectory: true)
         } else {
             let home = FileManager.default.homeDirectoryForCurrentUser
             panel.directoryURL = home.appendingPathComponent("Projects", isDirectory: true)
         }
         if panel.runModal() == .OK, let url = panel.url {
-            self.session.settings.localProjects.rootPath = url.path
+            self.session.settings.localProjects.rootPath = PathFormatter.abbreviateHome(url.path)
             self.appState.persistSettings()
+            self.appState.refreshLocalProjects()
             self.appState.requestRefresh(cancelInFlight: true)
         }
     }
@@ -492,6 +489,7 @@ struct AdvancedSettingsView: View {
     private func clearProjectFolder() {
         self.session.settings.localProjects.rootPath = nil
         self.appState.persistSettings()
+        self.appState.refreshLocalProjects()
         self.appState.requestRefresh(cancelInFlight: true)
     }
 
