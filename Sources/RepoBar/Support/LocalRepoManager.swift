@@ -70,7 +70,6 @@ actor LocalRepoManager {
         var isDirectory: ObjCBool = false
         let gitURL = url.appendingPathComponent(".git")
         return self.fileManager.fileExists(atPath: gitURL.path, isDirectory: &isDirectory)
-            && isDirectory.boolValue
     }
 
     private func loadStatus(at repoURL: URL) -> LocalRepoStatus? {

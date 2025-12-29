@@ -289,7 +289,8 @@ struct GeneralSettingsView: View {
                 Spacer()
                 Button("Quit RepoBar") { NSApp.terminate(nil) }
             }
-            .padding(.top, 8)
+            .padding(.top, 4)
+            .padding(.bottom, 6)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -415,11 +416,15 @@ struct AdvancedSettingsView: View {
         guard let path = self.session.settings.localProjects.rootPath,
               path.isEmpty == false
         else { return "Not set" }
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        if path.hasPrefix(home) {
-            return path.replacingOccurrences(of: home, with: "~")
+        let homeURL = FileManager.default.homeDirectoryForCurrentUser
+        let homePath = homeURL.resolvingSymlinksInPath().path
+        let resolvedPath = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
+        if resolvedPath.hasPrefix(homePath) {
+            let suffix = resolvedPath.dropFirst(homePath.count)
+            if suffix.isEmpty { return "~" }
+            return suffix.hasPrefix("/") ? "~\(suffix)" : "~/\(suffix)"
         }
-        return path
+        return resolvedPath
     }
 
     private var projectFolderLabelColor: Color {
