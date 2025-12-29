@@ -184,14 +184,6 @@ final class StatusBarMenuBuilder {
             represented: repo.title,
             systemImage: "bolt"
         ))
-        if repo.activityURL != nil {
-            menu.addItem(self.actionItem(
-                title: "Open Latest Activity",
-                action: #selector(self.target.openActivity),
-                represented: repo.title,
-                systemImage: "clock.arrow.circlepath"
-            ))
-        }
         if let local = repo.localStatus {
             menu.addItem(self.actionItem(
                 title: "Open in Finder",
@@ -220,11 +212,18 @@ final class StatusBarMenuBuilder {
             menu.addItem(self.viewItem(for: heatmap, enabled: false))
         }
 
-        let activityItems = self.repoActivityItems(for: repo)
-        if !activityItems.isEmpty {
+        let events = Array(repo.activityEvents.prefix(10))
+        if let latest = events.first {
             menu.addItem(.separator())
-            menu.addItem(self.infoItem("Recent Activity"))
-            activityItems.forEach { menu.addItem($0) }
+            menu.addItem(self.infoItem("Latest Activity"))
+            menu.addItem(self.repoActivityItem(for: latest))
+
+            let remaining = events.dropFirst()
+            if !remaining.isEmpty {
+                menu.addItem(.separator())
+                menu.addItem(self.infoItem("Recent Activity"))
+                remaining.forEach { menu.addItem(self.repoActivityItem(for: $0)) }
+            }
         }
 
         let detailItems = self.repoDetailItems(for: repo)
@@ -364,16 +363,11 @@ final class StatusBarMenuBuilder {
         self.viewItem(for: MenuPaddedSeparatorView(), enabled: false)
     }
 
-    private func repoActivityItems(for repo: RepositoryDisplayModel) -> [NSMenuItem] {
-        repo.activityEvents.prefix(10).map { event in
-            let view = ActivityMenuItemView(
-                event: event,
-                symbolName: self.activitySymbolName(for: event)
-            ) { [weak target] in
-                target?.open(url: event.url)
-            }
-            return self.viewItem(for: view, enabled: true, highlightable: true)
+    private func repoActivityItem(for event: ActivityEvent) -> NSMenuItem {
+        let view = ActivityMenuItemView(event: event, symbolName: self.activitySymbolName(for: event)) { [weak target] in
+            target?.open(url: event.url)
         }
+        return self.viewItem(for: view, enabled: true, highlightable: true)
     }
 
     private func activitySymbolName(for event: ActivityEvent) -> String {

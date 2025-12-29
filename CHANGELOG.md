@@ -44,6 +44,7 @@
 - Repo menu stat row now includes last push age.
 - Repo submenus now list remaining repository details like CI run count and traffic stats when available.
 - Repo submenus now include the last 10 recent activity events with quick links.
+- Repo submenus now surface the latest activity as the first row above the recent activity list.
 - Repo submenus now include nested lists for Issues and Pull Requests (20 most recently updated open items).
 - Repo recent item submenus now prefetch and reuse cached results to avoid showing a loading state.
 - Repo submenus now show item count badges for nested Issues/PRs/Releases.
