@@ -12,14 +12,21 @@ struct RecentRepoItemsDecodingTests {
             "title": "Issue one",
             "html_url": "https://github.com/acme/widget/issues/1",
             "updated_at": "2025-12-28T10:00:00Z",
-            "user": { "login": "alice" }
+            "comments": 3,
+            "labels": [
+              { "name": "bug", "color": "d73a4a" },
+              { "name": "good first issue", "color": "7057ff" }
+            ],
+            "user": { "login": "alice", "avatar_url": "https://avatars.githubusercontent.com/u/1?v=4" }
           },
           {
             "number": 2,
             "title": "PR (should not appear as issue)",
             "html_url": "https://github.com/acme/widget/pull/2",
             "updated_at": "2025-12-28T12:00:00Z",
-            "user": { "login": "bob" },
+            "comments": 0,
+            "labels": [],
+            "user": { "login": "bob", "avatar_url": "https://avatars.githubusercontent.com/u/2?v=4" },
             "pull_request": {}
           }
         ]
@@ -29,6 +36,9 @@ struct RecentRepoItemsDecodingTests {
         #expect(items.count == 1)
         #expect(items.first?.number == 1)
         #expect(items.first?.authorLogin == "alice")
+        #expect(items.first?.authorAvatarURL != nil)
+        #expect(items.first?.commentCount == 3)
+        #expect(items.first?.labels.count == 2)
     }
 
     @Test

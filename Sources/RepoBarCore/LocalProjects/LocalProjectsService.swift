@@ -19,6 +19,14 @@ public struct LocalProjectsService {
         let fileManager = FileManager.default
         let expandedRoot = PathFormatter.expandTilde(rootPath)
         let rootURL = URL(fileURLWithPath: expandedRoot, isDirectory: true)
+        return self.discoverRepoRoots(rootURL: rootURL, maxDepth: maxDepth, fileManager: fileManager)
+    }
+
+    public func discoverRepoRoots(rootURL: URL, maxDepth: Int = 2) -> [URL] {
+        self.discoverRepoRoots(rootURL: rootURL, maxDepth: maxDepth, fileManager: .default)
+    }
+
+    private func discoverRepoRoots(rootURL: URL, maxDepth: Int, fileManager: FileManager) -> [URL] {
         var isDirectory: ObjCBool = false
         guard fileManager.fileExists(atPath: rootURL.path, isDirectory: &isDirectory),
               isDirectory.boolValue

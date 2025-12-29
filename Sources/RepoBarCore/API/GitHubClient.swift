@@ -804,7 +804,10 @@ public actor GitHubClient {
                     title: $0.title,
                     url: $0.htmlUrl,
                     updatedAt: $0.updatedAt,
-                    authorLogin: $0.user?.login
+                    authorLogin: $0.user?.login,
+                    authorAvatarURL: $0.user?.avatarUrl,
+                    commentCount: $0.comments,
+                    labels: $0.labels.map { RepoIssueLabel(name: $0.name, colorHex: $0.color) }
                 )
             }
     }
@@ -829,11 +832,13 @@ public actor GitHubClient {
         let title: String
         let htmlUrl: URL
         let updatedAt: Date
+        let comments: Int
         let user: RecentUser?
+        let labels: [IssueLabel]
         let pullRequest: PullRequestMarker?
 
         enum CodingKeys: String, CodingKey {
-            case number, title, user
+            case number, title, user, comments, labels
             case htmlUrl = "html_url"
             case updatedAt = "updated_at"
             case pullRequest = "pull_request"
@@ -844,6 +849,17 @@ public actor GitHubClient {
 
     private struct RecentUser: Decodable {
         let login: String
+        let avatarUrl: URL?
+
+        enum CodingKeys: String, CodingKey {
+            case login
+            case avatarUrl = "avatar_url"
+        }
+    }
+
+    private struct IssueLabel: Decodable {
+        let name: String
+        let color: String
     }
 
     /// Pick the newest non-draft release, preferring publishedAt over createdAt.
@@ -904,7 +920,7 @@ public actor GitHubClient {
             let retryAfter = self.retryAfterDate(from: response) ?? Date().addingTimeInterval(90)
             await self.backoff.setCooldown(url: response.url ?? url, until: retryAfter)
             let retryText = RelativeFormatter.string(from: retryAfter, relativeTo: Date())
-            let message = "GitHub is still generating repository stats (HTTP 202, can take a few minutes); retry \(retryText)."
+            let message = "GitHub is still generating repository stats (HTTP 202). This is normal for new/inactive repos; RepoBar will retry \(retryText)."
             await self.diag.message("202 for \(url.lastPathComponent); cooldown until \(retryAfter)")
             throw GitHubAPIError.serviceUnavailable(
                 retryAfter: retryAfter,

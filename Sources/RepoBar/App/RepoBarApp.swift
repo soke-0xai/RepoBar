@@ -103,7 +103,6 @@ final class AppState {
 
     init() {
         self.session.settings = self.settingsStore.load()
-        self.migrateLocalProjectsBookmarkIfPossible()
         Task {
             await self.github.setTokenProvider { @Sendable [weak self] () async throws -> OAuthTokens? in
                 try? await self?.auth.refreshIfNeeded()
@@ -113,19 +112,6 @@ final class AppState {
             self?.requestRefresh()
         }
         Task { await DiagnosticsLogger.shared.setEnabled(self.session.settings.diagnosticsEnabled) }
-    }
-
-    private func migrateLocalProjectsBookmarkIfPossible() {
-        guard let rootPath = self.session.settings.localProjects.rootPath,
-              rootPath.isEmpty == false,
-              self.session.settings.localProjects.rootBookmarkData == nil
-        else { return }
-
-        let url = URL(fileURLWithPath: PathFormatter.expandTilde(rootPath), isDirectory: true)
-        if let data = SecurityScopedBookmark.create(for: url) {
-            self.session.settings.localProjects.rootBookmarkData = data
-            self.settingsStore.save(self.session.settings)
-        }
     }
 
     func refreshIfNeededForMenu() {
@@ -207,6 +193,7 @@ final class AppState {
                     self.session.lastError = nil
                     self.session.localRepoIndex = localSnapshot.repoIndex
                     self.session.localDiscoveredRepoCount = localSnapshot.discoveredCount
+                    self.session.localProjectsAccessDenied = localSnapshot.accessDenied
                     self.session.localProjectsScanInProgress = false
                 }
                 return
@@ -241,6 +228,7 @@ final class AppState {
             await MainActor.run {
                 self.session.localRepoIndex = localSnapshot.repoIndex
                 self.session.localDiscoveredRepoCount = localSnapshot.discoveredCount
+                self.session.localProjectsAccessDenied = localSnapshot.accessDenied
                 self.session.localProjectsScanInProgress = false
             }
             self.prefetchMenuTargets(from: final, visibleCount: targets.count, token: self.refreshTaskToken)
@@ -269,6 +257,7 @@ final class AppState {
         else {
             self.session.localRepoIndex = .empty
             self.session.localDiscoveredRepoCount = 0
+            self.session.localProjectsAccessDenied = false
             self.session.localProjectsScanInProgress = false
             return
         }
@@ -292,6 +281,7 @@ final class AppState {
             await MainActor.run {
                 self.session.localRepoIndex = localSnapshot.repoIndex
                 self.session.localDiscoveredRepoCount = localSnapshot.discoveredCount
+                self.session.localProjectsAccessDenied = localSnapshot.accessDenied
                 self.session.localProjectsScanInProgress = false
             }
         }
@@ -590,6 +580,7 @@ final class Session {
     var localRepoIndex: LocalRepoIndex = .empty
     var localDiscoveredRepoCount = 0
     var localProjectsScanInProgress = false
+    var localProjectsAccessDenied = false
 }
 
 enum AccountState: Equatable {

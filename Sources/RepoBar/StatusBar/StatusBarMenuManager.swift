@@ -394,21 +394,9 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 return
             }
             for issue in items.prefix(self.recentListLimit) {
-                let item = NSMenuItem(
-                    title: self.recentItemTitle(number: issue.number, title: issue.title),
-                    action: #selector(self.openURLItem),
-                    keyEquivalent: ""
-                )
-                item.target = self
-                item.representedObject = issue.url
-                item.toolTip = self.recentItemTooltip(title: issue.title, author: issue.authorLogin, updatedAt: issue.updatedAt)
-                if let image = NSImage(systemSymbolName: "exclamationmark.circle", accessibilityDescription: nil) {
-                    image.size = NSSize(width: 14, height: 14)
-                    image.isTemplate = true
-                    item.image = image
-                }
-                menu.addItem(item)
+                self.addIssueMenuItem(issue, to: menu)
             }
+            self.menuBuilder.refreshMenuViewHeights(in: menu)
         case let .pullRequests(items):
             if items.isEmpty {
                 let item = NSMenuItem(title: "No open pull requests", action: nil, keyEquivalent: "")
@@ -434,6 +422,21 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 menu.addItem(item)
             }
         }
+    }
+
+    private func addIssueMenuItem(_ issue: RepoIssueSummary, to menu: NSMenu) {
+        let highlightState = MenuItemHighlightState()
+        let view = MenuItemContainerView(highlightState: highlightState, showsSubmenuIndicator: false) {
+            IssueMenuItemView(issue: issue) { [weak self] in
+                self?.open(url: issue.url)
+            }
+        }
+
+        let item = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        item.isEnabled = true
+        item.view = MenuItemHostingView(rootView: AnyView(view), highlightState: highlightState)
+        item.toolTip = self.recentItemTooltip(title: issue.title, author: issue.authorLogin, updatedAt: issue.updatedAt)
+        menu.addItem(item)
     }
 
     private func recentItemTitle(number: Int, title: String) -> String {

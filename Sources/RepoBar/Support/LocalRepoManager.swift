@@ -11,6 +11,7 @@ actor LocalRepoManager {
     struct SnapshotResult: Sendable {
         let discoveredCount: Int
         let repoIndex: LocalRepoIndex
+        let accessDenied: Bool
     }
 
     func snapshot(
@@ -23,15 +24,14 @@ actor LocalRepoManager {
         guard let rootPath,
               rootPath.isEmpty == false
         else {
-            return SnapshotResult(discoveredCount: 0, repoIndex: .empty)
+            return SnapshotResult(discoveredCount: 0, repoIndex: .empty, accessDenied: false)
         }
 
         let now = Date()
 
         let fallbackURL = URL(fileURLWithPath: PathFormatter.expandTilde(rootPath), isDirectory: true)
-        let rootURL = rootBookmarkData
-            .flatMap(SecurityScopedBookmark.resolve)
-            ?? fallbackURL
+        let resolvedBookmark = rootBookmarkData.flatMap(SecurityScopedBookmark.resolve)
+        let rootURL = resolvedBookmark ?? fallbackURL
 
         let didStart = rootURL.startAccessingSecurityScopedResource()
         defer {
@@ -40,10 +40,14 @@ actor LocalRepoManager {
             }
         }
 
+        if rootBookmarkData != nil, resolvedBookmark == nil || didStart == false {
+            return SnapshotResult(discoveredCount: 0, repoIndex: .empty, accessDenied: true)
+        }
+
         let resolvedRoot = rootURL.resolvingSymlinksInPath().path
 
         let repoRoots = self.discoverRepoRoots(
-            rootPath: rootURL.path,
+            rootURL: rootURL,
             resolvedRoot: resolvedRoot,
             now: now,
             forceRescan: forceRescan
@@ -75,7 +79,8 @@ actor LocalRepoManager {
         let allStatuses = cachedStatuses + refreshedSnapshot.statuses
         return SnapshotResult(
             discoveredCount: repoRoots.count,
-            repoIndex: LocalRepoIndex(statuses: allStatuses)
+            repoIndex: LocalRepoIndex(statuses: allStatuses),
+            accessDenied: false
         )
     }
 
@@ -90,7 +95,7 @@ actor LocalRepoManager {
     }
 
     private func discoverRepoRoots(
-        rootPath: String,
+        rootURL: URL,
         resolvedRoot: String,
         now: Date,
         forceRescan: Bool
@@ -102,7 +107,7 @@ actor LocalRepoManager {
             return cached.repoRoots
         }
 
-        let roots = LocalProjectsService().discoverRepoRoots(rootPath: rootPath, maxDepth: 2)
+        let roots = LocalProjectsService().discoverRepoRoots(rootURL: rootURL, maxDepth: 2)
         self.discoveryCache[resolvedRoot] = DiscoveryCacheEntry(repoRoots: roots, discoveredAt: now)
         return roots
     }

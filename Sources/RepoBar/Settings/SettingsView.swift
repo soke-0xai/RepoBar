@@ -446,7 +446,7 @@ struct AdvancedSettingsView: View {
         let total = self.session.localDiscoveredRepoCount
         let matched = self.localMatchedRepoCount
         if total == 0 {
-            if self.session.settings.localProjects.rootBookmarkData == nil {
+            if self.session.localProjectsAccessDenied || self.session.settings.localProjects.rootBookmarkData == nil {
                 return "No repositories found yet. Re-choose the folder to grant access."
             }
             return "No repositories found yet."
