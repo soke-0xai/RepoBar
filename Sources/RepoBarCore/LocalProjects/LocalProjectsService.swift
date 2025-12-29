@@ -210,7 +210,7 @@ public struct LocalProjectsService {
 private struct GitRunner: Sendable {
     func run(_ arguments: [String], in directory: URL) throws -> String {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+        process.executableURL = GitExecutableLocator.shared.url
         process.arguments = arguments
         process.currentDirectoryURL = directory
 
@@ -233,6 +233,28 @@ private struct GitRunner: Sendable {
 
 private enum GitRunnerError: Error {
     case commandFailed(output: String, error: String)
+}
+
+private struct GitExecutableLocator: Sendable {
+    static let shared = GitExecutableLocator()
+    let url: URL
+
+    init() {
+        let fileManager = FileManager.default
+        let envPath = ProcessInfo.processInfo.environment["PATH"] ?? ""
+        let pathCandidates = envPath
+            .split(separator: ":")
+            .map { "\($0)/git" }
+
+        let preferred = [
+            "/opt/homebrew/bin/git",
+            "/usr/local/bin/git"
+        ]
+
+        let candidates = preferred + pathCandidates + ["/usr/bin/git"]
+        let resolved = candidates.first { fileManager.isExecutableFile(atPath: $0) } ?? "/usr/bin/git"
+        self.url = URL(fileURLWithPath: resolved)
+    }
 }
 
 private struct GitRemote: Sendable {

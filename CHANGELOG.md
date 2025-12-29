@@ -51,6 +51,7 @@
 - Contribution and repository heatmaps now align to the same week-based date range.
 - Heatmap rendering now uses cached CoreGraphics rasterization for faster menu redraws.
 - Heatmaps now stretch to the full available menu width (respecting existing card padding).
+- `repobar local --sync` now shows a per-repo SYNC column and includes a `synced` flag in JSON output.
 
 ### Fixed
 - Settings now open via SwiftUI `openSettings` from the MenuBarExtra.
@@ -62,3 +63,4 @@
 - Fixed a crash when opening menus with the raster heatmap renderer.
 - Heatmaps now pixel-align to avoid uneven left/right padding in the menu.
 - Heatmaps now fill the full menu row width (reclaim submenu chevron padding).
+- Local projects branch detection now uses the first available git binary on PATH/Homebrew to avoid “unknown.”

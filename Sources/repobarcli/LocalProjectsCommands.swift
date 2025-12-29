@@ -57,6 +57,7 @@ struct LocalProjectsCommand: CommanderRunnableCommand {
         let resolvedRoot = PathFormatter.expandTilde(rootPath)
 
         let statuses = snapshot.statuses
+        let syncedPaths = Set(snapshot.syncedStatuses.map { $0.path.path })
 
         if self.output.jsonOutput {
             let encoder = JSONEncoder()
@@ -66,7 +67,7 @@ struct LocalProjectsCommand: CommanderRunnableCommand {
                 resolvedRoot: resolvedRoot,
                 depth: self.depth,
                 syncedCount: snapshot.syncedStatuses.count,
-                repositories: statuses.map(LocalRepoOutput.init)
+                repositories: statuses.map { LocalRepoOutput($0, didSync: syncedPaths.contains($0.path.path)) }
             )
             let data = try encoder.encode(payload)
             if let json = String(data: data, encoding: .utf8) { print(json) }
@@ -86,7 +87,12 @@ struct LocalProjectsCommand: CommanderRunnableCommand {
             return
         }
 
-        for line in localProjectsTableLines(statuses, useColor: self.output.useColor) {
+        for line in localProjectsTableLines(
+            statuses,
+            useColor: self.output.useColor,
+            showSync: self.sync,
+            syncedPaths: syncedPaths
+        ) {
             print(line)
         }
     }
@@ -108,9 +114,10 @@ private struct LocalRepoOutput: Codable, Sendable {
     let aheadCount: Int?
     let behindCount: Int?
     let syncState: String
+    let synced: Bool
     let path: String
 
-    init(_ status: LocalRepoStatus) {
+    init(_ status: LocalRepoStatus, didSync: Bool) {
         self.displayName = status.displayName
         self.fullName = status.fullName
         self.branch = status.branch
@@ -118,43 +125,60 @@ private struct LocalRepoOutput: Codable, Sendable {
         self.aheadCount = status.aheadCount
         self.behindCount = status.behindCount
         self.syncState = status.syncState.rawValue
+        self.synced = didSync
         self.path = status.path.path
     }
 }
 
-private func localProjectsTableLines(_ statuses: [LocalRepoStatus], useColor: Bool) -> [String] {
+private func localProjectsTableLines(
+    _ statuses: [LocalRepoStatus],
+    useColor: Bool,
+    showSync: Bool,
+    syncedPaths: Set<String>
+) -> [String] {
     let stateHeader = "STATE"
     let branchHeader = "BRANCH"
     let repoHeader = "REPO"
     let pathHeader = "PATH"
+    let syncHeader = "SYNC"
 
     let stateValues = statuses.map { localStateLabel($0) }
     let branchValues = statuses.map(\.branch)
     let repoValues = statuses.map(\.displayName)
     let pathValues = statuses.map { PathFormatter.displayString($0.path.path) }
+    let syncValues = statuses.map { syncedPaths.contains($0.path.path) ? "✓" : "" }
 
     let stateWidth = max(stateHeader.count, stateValues.map(\.count).max() ?? 1)
     let branchWidth = max(branchHeader.count, branchValues.map(\.count).max() ?? 1)
     let repoWidth = max(repoHeader.count, repoValues.map(\.count).max() ?? 1)
     let pathWidth = max(pathHeader.count, pathValues.map(\.count).max() ?? 1)
+    let syncWidth = showSync ? max(syncHeader.count, syncValues.map(\.count).max() ?? 1) : 0
 
-    let header = [
+    var headerParts = [
         padRight(stateHeader, to: stateWidth),
         padRight(branchHeader, to: branchWidth),
         padRight(repoHeader, to: repoWidth),
         padRight(pathHeader, to: pathWidth)
-    ].joined(separator: "  ")
+    ]
+    if showSync {
+        headerParts.append(padRight(syncHeader, to: syncWidth))
+    }
+    let header = headerParts.joined(separator: "  ")
 
     var lines: [String] = []
     lines.append(useColor ? Ansi.bold.wrap(header) : header)
 
     for idx in statuses.indices {
-        let line = [
+        var lineParts = [
             padRight(stateValues[idx], to: stateWidth),
             padRight(branchValues[idx], to: branchWidth),
             padRight(repoValues[idx], to: repoWidth),
             padRight(pathValues[idx], to: pathWidth)
-        ].joined(separator: "  ")
+        ]
+        if showSync {
+            lineParts.append(padRight(syncValues[idx], to: syncWidth))
+        }
+        let line = lineParts.joined(separator: "  ")
         lines.append(line)
     }
 

@@ -71,6 +71,8 @@ struct LocalProjectsServiceTests {
         let names = Set(snapshot.statuses.map(\.displayName))
         #expect(names.contains("foo/repo-a"))
         #expect(names.contains("foo/repo-b"))
+        let repoAStatus = snapshot.statuses.first(where: { $0.name == "repo-a" })
+        #expect(repoAStatus?.branch == "main")
     }
 
     @Test
