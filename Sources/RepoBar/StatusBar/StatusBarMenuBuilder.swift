@@ -188,6 +188,20 @@ final class StatusBarMenuBuilder {
                 systemImage: "clock.arrow.circlepath"
             ))
         }
+        if let local = repo.localStatus {
+            menu.addItem(self.actionItem(
+                title: "Open in Finder",
+                action: #selector(self.target.openLocalFinder),
+                represented: local.path,
+                systemImage: "folder"
+            ))
+            menu.addItem(self.actionItem(
+                title: "Open in Terminal",
+                action: #selector(self.target.openLocalTerminal),
+                represented: local.path,
+                systemImage: "terminal"
+            ))
+        }
 
         if settings.heatmap.display == .submenu, !repo.heatmap.isEmpty {
             let filtered = HeatmapFilter.filter(repo.heatmap, range: self.appState.session.heatmapRange)
@@ -297,6 +311,10 @@ final class StatusBarMenuBuilder {
 
     private func repoDetailItems(for repo: RepositoryDisplayModel) -> [NSMenuItem] {
         var items: [NSMenuItem] = []
+        if let local = repo.localStatus {
+            items.append(self.infoItem("Branch: \(local.branch)"))
+            items.append(self.infoItem("Sync: \(local.syncDetail)"))
+        }
         if let runCount = repo.ciRunCount {
             items.append(self.infoItem("CI runs: \(runCount)"))
         }
@@ -427,7 +445,9 @@ final class StatusBarMenuBuilder {
             ? (session.menuSnapshot?.repositories ?? [])
             : session.repositories
         let sorted = RepositoryPipeline.apply(baseRepos, query: query)
-        return sorted.map { RepositoryDisplayModel(repo: $0) }
+        return sorted.map { repo in
+            RepositoryDisplayModel(repo: repo, localStatus: session.localRepoIndex.status(for: repo))
+        }
     }
 
     private func emptyStateMessage(for session: Session) -> (String, String) {

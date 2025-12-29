@@ -16,6 +16,7 @@ struct RepoCardView: View {
         VStack(alignment: .leading, spacing: self.verticalSpacing) {
             self.header
             self.stats
+            self.localStatusRow
             self.activity
             self.errorOrLimit
             self.heatmap
@@ -49,6 +50,10 @@ struct RepoCardView: View {
         parts.append("CI \(self.repo.ciStatus)")
         parts.append("Issues \(self.repo.issues)")
         parts.append("Pull requests \(self.repo.pulls)")
+        if let local = self.repo.localStatus {
+            parts.append("Branch \(local.branch)")
+            parts.append("Sync \(local.syncDetail)")
+        }
         if let release = self.repo.releaseLine {
             parts.append("Release \(release)")
         }
@@ -76,6 +81,10 @@ struct RepoCardView: View {
                 if self.isPinned { Button("Unpin", action: self.unpin) }
                 Button("Hide", action: self.hide)
                 Button("Open in GitHub") { self.open(url: self.repoURL()) }
+                if let local = self.repo.localStatus {
+                    Button("Open in Finder") { self.open(url: local.path) }
+                    Button("Open in Terminal") { self.openTerminal(at: local.path) }
+                }
                 if let moveUp { Button("Move up", action: moveUp) }
                 if let moveDown { Button("Move down", action: moveDown) }
             } label: {
@@ -110,6 +119,23 @@ struct RepoCardView: View {
             )
             StatBadge(text: "Visitors", valueText: self.repo.trafficVisitors.map(String.init) ?? "--")
             StatBadge(text: "Cloners", valueText: self.repo.trafficCloners.map(String.init) ?? "--")
+        }
+    }
+
+    @ViewBuilder
+    private var localStatusRow: some View {
+        if let local = self.repo.localStatus {
+            HStack(spacing: 6) {
+                Image(systemName: local.syncState.symbolName)
+                    .foregroundStyle(self.localSyncColor(for: local.syncState))
+                Text(local.branch)
+                    .font(.caption)
+                    .lineLimit(1)
+                Text(local.syncDetail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 8)
+            }
         }
     }
 
@@ -195,6 +221,26 @@ struct RepoCardView: View {
         self.colorScheme == .light ? Color(nsColor: .systemOrange) : Color(nsColor: .systemYellow)
     }
 
+    private func localSyncColor(for state: LocalSyncState) -> Color {
+        let isLight = self.colorScheme == .light
+        switch state {
+        case .synced:
+            return isLight
+                ? Color(nsColor: NSColor(srgbRed: 0.12, green: 0.55, blue: 0.24, alpha: 1))
+                : Color(nsColor: NSColor(srgbRed: 0.23, green: 0.8, blue: 0.4, alpha: 1))
+        case .behind:
+            return isLight ? Color(nsColor: .systemOrange) : Color(nsColor: .systemYellow)
+        case .ahead:
+            return isLight ? Color(nsColor: .systemBlue) : Color(nsColor: .systemTeal)
+        case .diverged:
+            return isLight ? Color(nsColor: .systemOrange) : Color(nsColor: .systemYellow)
+        case .dirty:
+            return isLight ? Color(nsColor: .systemRed) : Color(nsColor: .systemRed)
+        case .unknown:
+            return .secondary
+        }
+    }
+
     private func issuesURL() -> URL {
         URL(string: "https://github.com/\(self.repo.title)/issues")!
     }
@@ -205,6 +251,12 @@ struct RepoCardView: View {
 
     private func actionsURL() -> URL {
         URL(string: "https://github.com/\(self.repo.title)/actions")!
+    }
+
+    private func openTerminal(at url: URL) {
+        let preferred = self.session.settings.localProjects.preferredTerminal
+        let terminal = TerminalApp.resolve(preferred)
+        terminal.open(at: url)
     }
 }
 

@@ -18,6 +18,7 @@ struct RepoMenuCardView: View {
             VStack(alignment: .leading, spacing: self.verticalSpacing) {
                 self.header
                 self.stats
+                self.localStatusRow
                 self.activity
                 self.errorOrLimit
                 self.heatmap
@@ -76,6 +77,23 @@ struct RepoMenuCardView: View {
             ForEach(self.repo.stats) { stat in
                 MenuStatBadge(label: stat.label, value: stat.value, systemImage: stat.systemImage)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var localStatusRow: some View {
+        if let local = self.repo.localStatus {
+            HStack(spacing: 6) {
+                Image(systemName: local.syncState.symbolName)
+                    .font(.caption2)
+                    .foregroundStyle(self.localSyncColor(for: local.syncState))
+                Text(local.branch)
+                    .font(.caption2)
+                    .lineLimit(1)
+                Text(local.syncDetail)
+                    .font(.caption2)
+            }
+            .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
         }
     }
 
@@ -140,6 +158,26 @@ struct RepoMenuCardView: View {
 
     private var warningColor: Color {
         self.isLightAppearance ? Color(nsColor: .systemOrange) : Color(nsColor: .systemYellow)
+    }
+
+    private func localSyncColor(for state: LocalSyncState) -> Color {
+        if self.isHighlighted { return MenuHighlightStyle.selectionText }
+        switch state {
+        case .synced:
+            return self.isLightAppearance
+                ? Color(nsColor: NSColor(srgbRed: 0.12, green: 0.55, blue: 0.24, alpha: 1))
+                : Color(nsColor: NSColor(srgbRed: 0.23, green: 0.8, blue: 0.4, alpha: 1))
+        case .behind:
+            return self.isLightAppearance ? Color(nsColor: .systemOrange) : Color(nsColor: .systemYellow)
+        case .ahead:
+            return self.isLightAppearance ? Color(nsColor: .systemBlue) : Color(nsColor: .systemTeal)
+        case .diverged:
+            return self.isLightAppearance ? Color(nsColor: .systemOrange) : Color(nsColor: .systemYellow)
+        case .dirty:
+            return Color(nsColor: .systemRed)
+        case .unknown:
+            return MenuHighlightStyle.secondary(self.isHighlighted)
+        }
     }
 }
 

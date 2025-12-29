@@ -31,8 +31,9 @@ struct RepositoryDisplayModel: Identifiable, Equatable {
     let sortOrder: Int?
     let error: String?
     let rateLimitedUntil: Date?
+    let localStatus: LocalRepoStatus?
 
-    init(repo: Repository, now: Date = Date()) {
+    init(repo: Repository, localStatus: LocalRepoStatus? = nil, now: Date = Date()) {
         self.source = repo
         self.id = repo.id
         self.title = repo.fullName
@@ -48,6 +49,7 @@ struct RepositoryDisplayModel: Identifiable, Equatable {
         self.sortOrder = repo.sortOrder
         self.error = repo.error
         self.rateLimitedUntil = repo.rateLimitedUntil
+        self.localStatus = localStatus
 
         if let release = repo.latestRelease {
             self.releaseLine = ReleaseFormatter.menuLine(for: release, now: now)

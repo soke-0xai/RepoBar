@@ -35,7 +35,7 @@ _Last updated: 2025-11-24_
   - General: number of repos, refresh interval, show contribution image, launch at login, default scope (user vs org?), heatmap on/off (optional).
   - Accounts: login state, reconnect, logout; GitHub.com client ID/secret entry; GHE base URL/client ID/secret; loopback port; PEM key import for the GitHub App private key.
   - Appearance: card density (compact/comfortable), accent tone (macOS default + GitHub greens for heatmap only).
-  - Advanced: rate-limit info, cache reset, diagnostics toggle (verbose logging), show ETag/backoff status.
+  - Advanced: rate-limit info, cache reset, diagnostics toggle (verbose logging), show ETag/backoff status, local projects folder (auto-sync + terminal picker).
 
 ## Platform & App Identity
 - Info.plist:

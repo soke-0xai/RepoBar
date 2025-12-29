@@ -4,6 +4,7 @@ public struct UserSettings: Equatable, Codable {
     public var appearance = AppearanceSettings()
     public var heatmap = HeatmapSettings()
     public var repoList = RepoListSettings()
+    public var localProjects = LocalProjectsSettings()
     public var refreshInterval: RefreshInterval = .fiveMinutes
     public var launchAtLogin = false
     public var debugPaneEnabled: Bool = false
@@ -37,6 +38,14 @@ public struct AppearanceSettings: Equatable, Codable {
     public var showContributionHeader = true
     public var cardDensity: CardDensity = .comfortable
     public var accentTone: AccentTone = .githubGreen
+
+    public init() {}
+}
+
+public struct LocalProjectsSettings: Equatable, Codable {
+    public var rootPath: String?
+    public var autoSyncEnabled: Bool = true
+    public var preferredTerminal: String?
 
     public init() {}
 }

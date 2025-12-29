@@ -86,6 +86,7 @@ final class AppState {
     let github = GitHubClient()
     let refreshScheduler = RefreshScheduler()
     private let settingsStore = SettingsStore()
+    private let localRepoManager = LocalRepoManager()
     private let menuRefreshInterval: TimeInterval = 30
     private var refreshTask: Task<Void, Never>?
     private var refreshTaskToken = UUID()
@@ -169,6 +170,8 @@ final class AppState {
     }
 
     func refresh() async {
+        let localSettings = self.session.settings.localProjects
+        let localIndexTask = Task { await self.localRepoManager.snapshot(settings: localSettings) }
         do {
             if Task.isCancelled { return }
             let now = Date()
@@ -179,6 +182,10 @@ final class AppState {
                     self.session.menuSnapshot = nil
                     self.session.hasLoadedRepositories = false
                     self.session.lastError = nil
+                }
+                let localIndex = await localIndexTask.value
+                await MainActor.run {
+                    self.session.localRepoIndex = localIndex
                 }
                 return
             }
@@ -197,7 +204,11 @@ final class AppState {
             try Task.checkCancellation()
             let merged = self.mergeHydrated(hydrated, into: ordered)
             let final = self.applyPinnedOrder(to: merged)
+            let localIndex = await localIndexTask.value
             await self.updateSession(with: final, now: now)
+            await MainActor.run {
+                self.session.localRepoIndex = localIndex
+            }
             self.prefetchMenuTargets(from: final, visibleCount: targets.count, token: self.refreshTaskToken)
             let reset = await self.github.rateLimitReset(now: now)
             let message = await self.github.rateLimitMessage(now: now)
@@ -206,7 +217,11 @@ final class AppState {
                 self.session.lastError = message
             }
         } catch {
-            await MainActor.run { self.session.lastError = error.userFacingMessage }
+            let localIndex = await localIndexTask.value
+            await MainActor.run {
+                self.session.localRepoIndex = localIndex
+                self.session.lastError = error.userFacingMessage
+            }
         }
     }
 
@@ -488,6 +503,7 @@ final class Session {
     var contributionError: String?
     var heatmapRange: HeatmapRange = HeatmapFilter.range(span: .twelveMonths, now: Date(), alignToWeek: true)
     var menuRepoSelection: MenuRepoSelection = .all
+    var localRepoIndex: LocalRepoIndex = .empty
 }
 
 enum AccountState: Equatable {

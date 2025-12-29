@@ -112,6 +112,18 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         self.open(url: url)
     }
 
+    @objc func openLocalFinder(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+        self.open(url: url)
+    }
+
+    @objc func openLocalTerminal(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+        let preferred = self.appState.session.settings.localProjects.preferredTerminal
+        let terminal = TerminalApp.resolve(preferred)
+        terminal.open(at: url)
+    }
+
     @objc func copyRepoName(_ sender: NSMenuItem) {
         guard let fullName = self.repoFullName(from: sender) else { return }
         let pb = NSPasteboard.general
@@ -197,7 +209,8 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private func repoModel(from sender: NSMenuItem) -> RepositoryDisplayModel? {
         guard let fullName = self.repoFullName(from: sender) else { return nil }
         guard let repo = self.appState.session.repositories.first(where: { $0.fullName == fullName }) else { return nil }
-        return RepositoryDisplayModel(repo: repo)
+        let local = self.appState.session.localRepoIndex.status(forFullName: fullName)
+        return RepositoryDisplayModel(repo: repo, localStatus: local)
     }
 
     private func repoFullName(from sender: NSMenuItem) -> String? {

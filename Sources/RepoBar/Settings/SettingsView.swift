@@ -332,6 +332,57 @@ struct AdvancedSettingsView: View {
                 Text("Controls how often RepoBar refreshes GitHub data.")
             }
 
+            Section {
+                LabeledContent("Project folder") {
+                    HStack(spacing: 8) {
+                        Text(self.projectFolderLabel)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .foregroundStyle(self.projectFolderLabelColor)
+                        Button("Choose…") { self.pickProjectFolder() }
+                        if self.session.settings.localProjects.rootPath != nil {
+                            Button("Clear") { self.clearProjectFolder() }
+                        }
+                    }
+                }
+
+                if let summary = self.localRepoSummary {
+                    Text(summary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Toggle("Auto-sync clean repos", isOn: self.$session.settings.localProjects.autoSyncEnabled)
+                    .disabled(self.session.settings.localProjects.rootPath == nil)
+                    .onChange(of: self.session.settings.localProjects.autoSyncEnabled) { _, _ in
+                        self.appState.persistSettings()
+                        self.appState.requestRefresh(cancelInFlight: true)
+                    }
+
+                HStack {
+                    Text("Preferred Terminal")
+                    Spacer()
+                    Picker("", selection: self.preferredTerminalBinding) {
+                        ForEach(TerminalApp.installed, id: \.rawValue) { terminal in
+                            HStack {
+                                if let icon = terminal.appIcon {
+                                    Image(nsImage: icon.resized(to: NSSize(width: 16, height: 16)))
+                                }
+                                Text(terminal.displayName)
+                            }
+                            .tag(terminal.rawValue)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .disabled(self.session.settings.localProjects.rootPath == nil)
+                }
+            } header: {
+                Text("Local Projects")
+            } footer: {
+                Text("Scans two levels deep under the folder and fast-forward pulls clean repos.")
+            }
+
             #if DEBUG
                 Section {
                     Toggle("Enable debug tools", isOn: self.$session.settings.debugPaneEnabled)
@@ -348,6 +399,7 @@ struct AdvancedSettingsView: View {
         .formStyle(.grouped)
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
+        .onAppear { self.ensurePreferredTerminal() }
     }
 
     private func intervalLabel(_ interval: RefreshInterval) -> String {
@@ -356,6 +408,93 @@ struct AdvancedSettingsView: View {
         case .twoMinutes: "2 minutes"
         case .fiveMinutes: "5 minutes"
         case .fifteenMinutes: "15 minutes"
+        }
+    }
+
+    private var projectFolderLabel: String {
+        guard let path = self.session.settings.localProjects.rootPath,
+              path.isEmpty == false
+        else { return "Not set" }
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        if path.hasPrefix(home) {
+            return path.replacingOccurrences(of: home, with: "~")
+        }
+        return path
+    }
+
+    private var projectFolderLabelColor: Color {
+        self.session.settings.localProjects.rootPath == nil ? .secondary : .primary
+    }
+
+    private var localRepoSummary: String? {
+        guard self.session.settings.localProjects.rootPath != nil else { return nil }
+        let total = self.session.localRepoIndex.all.count
+        let matched = self.localMatchedRepoCount
+        if total == 0 { return "No repositories found yet." }
+        if matched > 0 { return "Found \(total) local repos · \(matched) match GitHub data." }
+        return "Found \(total) local repos."
+    }
+
+    private var localMatchedRepoCount: Int {
+        let repos = self.session.repositories.isEmpty
+            ? (self.session.menuSnapshot?.repositories ?? [])
+            : self.session.repositories
+        guard repos.isEmpty == false else { return 0 }
+        let fullNames = Set(repos.map(\.fullName))
+        let repoByName = Dictionary(grouping: repos, by: \.name)
+        var matched = 0
+        for status in self.session.localRepoIndex.all {
+            if let fullName = status.fullName, fullNames.contains(fullName) {
+                matched += 1
+            } else if let candidates = repoByName[status.name], candidates.count == 1 {
+                matched += 1
+            }
+        }
+        return matched
+    }
+
+    private var preferredTerminalBinding: Binding<String> {
+        Binding(
+            get: {
+                self.session.settings.localProjects.preferredTerminal ?? TerminalApp.defaultPreferred.rawValue
+            },
+            set: { newValue in
+                self.session.settings.localProjects.preferredTerminal = newValue
+                self.appState.persistSettings()
+            }
+        )
+    }
+
+    private func pickProjectFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Choose"
+        if let existing = self.session.settings.localProjects.rootPath {
+            panel.directoryURL = URL(fileURLWithPath: existing, isDirectory: true)
+        } else {
+            let home = FileManager.default.homeDirectoryForCurrentUser
+            panel.directoryURL = home.appendingPathComponent("Projects", isDirectory: true)
+        }
+        if panel.runModal() == .OK, let url = panel.url {
+            self.session.settings.localProjects.rootPath = url.path
+            self.appState.persistSettings()
+            self.appState.requestRefresh(cancelInFlight: true)
+        }
+    }
+
+    private func clearProjectFolder() {
+        self.session.settings.localProjects.rootPath = nil
+        self.appState.persistSettings()
+        self.appState.requestRefresh(cancelInFlight: true)
+    }
+
+    private func ensurePreferredTerminal() {
+        let resolved = TerminalApp.resolve(self.session.settings.localProjects.preferredTerminal).rawValue
+        if self.session.settings.localProjects.preferredTerminal != resolved {
+            self.session.settings.localProjects.preferredTerminal = resolved
+            self.appState.persistSettings()
         }
     }
 }
