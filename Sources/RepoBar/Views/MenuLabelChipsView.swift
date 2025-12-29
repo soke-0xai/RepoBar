@@ -24,13 +24,13 @@ private struct MenuLabelChipView: View {
         let base = MenuLabelColor.nsColor(from: self.label.colorHex) ?? .separatorColor
         let baseColor = Color(nsColor: base)
 
-        let fillOpacity: CGFloat = self.colorScheme == .dark ? 0.16 : 0.10
-        let strokeOpacity: CGFloat = self.colorScheme == .dark ? 0.45 : 0.60
+        let fillOpacity: CGFloat = self.colorScheme == .dark ? 0.16 : 0.16
+        let strokeOpacity: CGFloat = self.colorScheme == .dark ? 0.45 : 0.85
 
         let fill = self.isHighlighted ? .white.opacity(0.16) : baseColor.opacity(fillOpacity)
         let stroke = self.isHighlighted ? .white.opacity(0.30) : baseColor.opacity(strokeOpacity)
         let dot = self.isHighlighted ? .white.opacity(0.85) : baseColor
-        let text = self.isHighlighted ? Color.white.opacity(0.95) : Color.primary.opacity(0.92)
+        let text = self.isHighlighted ? Color.white.opacity(0.95) : Color(nsColor: .labelColor)
 
         HStack(spacing: 5) {
             Circle()

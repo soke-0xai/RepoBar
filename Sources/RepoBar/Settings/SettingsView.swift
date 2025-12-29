@@ -498,7 +498,9 @@ struct AdvancedSettingsView: View {
             panel.directoryURL = home.appendingPathComponent("Projects", isDirectory: true)
         }
         if panel.runModal() == .OK, let url = panel.url {
-            self.session.settings.localProjects.rootPath = PathFormatter.abbreviateHome(url.path)
+            let filePathURL = (url as NSURL).filePathURL ?? url
+            let resolvedPath = filePathURL.resolvingSymlinksInPath().path
+            self.session.settings.localProjects.rootPath = PathFormatter.abbreviateHome(resolvedPath)
             self.session.settings.localProjects.rootBookmarkData = SecurityScopedBookmark.create(for: url)
             self.appState.persistSettings()
             self.appState.refreshLocalProjects(forceRescan: true)

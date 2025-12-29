@@ -100,6 +100,22 @@ struct LocalProjectsServiceTests {
     }
 
     @Test
+    func discoverRepoRoots_acceptsFileReferenceURLs() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let repo = root.appendingPathComponent("repo-a", isDirectory: true)
+        try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
+        try initializeRepo(at: repo, origin: "git@github.com:foo/repo-a.git")
+
+        let referenceRoot = (root as NSURL).fileReferenceURL() as URL? ?? root
+        let roots = LocalProjectsService().discoverRepoRoots(rootURL: referenceRoot, maxDepth: 1)
+
+        #expect(roots.count == 1)
+        #expect(roots.first?.lastPathComponent == "repo-a")
+    }
+
+    @Test
     func snapshot_autoSync_fastForwardPullsBehindRepos() async throws {
         let base = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: base) }

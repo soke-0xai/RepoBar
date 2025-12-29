@@ -31,12 +31,12 @@ actor LocalRepoManager {
 
         let fallbackURL = URL(fileURLWithPath: PathFormatter.expandTilde(rootPath), isDirectory: true)
         let resolvedBookmark = rootBookmarkData.flatMap(SecurityScopedBookmark.resolve)
-        let rootURL = resolvedBookmark ?? fallbackURL
+        let scopedURL = resolvedBookmark ?? fallbackURL
 
-        let didStart = rootURL.startAccessingSecurityScopedResource()
+        let didStart = scopedURL.startAccessingSecurityScopedResource()
         defer {
             if didStart {
-                rootURL.stopAccessingSecurityScopedResource()
+                scopedURL.stopAccessingSecurityScopedResource()
             }
         }
 
@@ -44,6 +44,9 @@ actor LocalRepoManager {
             return SnapshotResult(discoveredCount: 0, repoIndex: .empty, accessDenied: true)
         }
 
+        // Security-scoped bookmarks can resolve to file reference URLs (`/.file/id=…`).
+        // FileManager APIs expect a path-based file URL for traversal.
+        let rootURL = (scopedURL as NSURL).filePathURL ?? scopedURL
         let resolvedRoot = rootURL.resolvingSymlinksInPath().path
 
         let repoRoots = self.discoverRepoRoots(

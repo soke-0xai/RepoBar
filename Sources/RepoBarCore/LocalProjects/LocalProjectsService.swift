@@ -27,6 +27,7 @@ public struct LocalProjectsService {
     }
 
     private func discoverRepoRoots(rootURL: URL, maxDepth: Int, fileManager: FileManager) -> [URL] {
+        let rootURL = (rootURL as NSURL).filePathURL ?? rootURL
         var isDirectory: ObjCBool = false
         guard fileManager.fileExists(atPath: rootURL.path, isDirectory: &isDirectory),
               isDirectory.boolValue
