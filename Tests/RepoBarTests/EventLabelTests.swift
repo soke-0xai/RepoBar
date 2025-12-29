@@ -89,4 +89,27 @@ struct EventLabelTests {
         let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
         #expect(activity.url.absoluteString == "https://github.com/steipete/RepoBar/commit/abc123")
     }
+
+    @Test
+    func activityMetadataCapturesActionTargetAndLink() {
+        let event = RepoEvent(
+            type: "PullRequestEvent",
+            actor: EventActor(login: "octo", avatarUrl: nil),
+            payload: EventPayload(
+                action: "closed",
+                comment: nil,
+                issue: nil,
+                pullRequest: EventPullRequest(
+                    title: "Ship it",
+                    number: 42,
+                    merged: true,
+                    htmlUrl: URL(string: "https://example.com/pr/42")!
+                )
+            ),
+            createdAt: Date()
+        )
+        let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
+        #expect(activity.metadata?.label == "PR merged: #42: Ship it")
+        #expect(activity.metadata?.deepLink?.absoluteString == "https://example.com/pr/42")
+    }
 }

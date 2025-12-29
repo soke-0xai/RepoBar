@@ -102,7 +102,7 @@ Last updated: 2025-12-28
 - Stronger mapping for icons and labels.
 - Easier to add new event types later.
 
-### [ ] 14) Activity metadata model
+### [x] 14) Activity metadata model
 - Add `ActivityMetadata` (actor, action, target, url).
 - Derived fields for label + deep link.
 

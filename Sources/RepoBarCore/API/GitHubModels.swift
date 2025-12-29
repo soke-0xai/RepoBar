@@ -291,62 +291,92 @@ extension RepoEvent {
     }
 
     func activityEvent(owner: String, name: String) -> ActivityEvent {
-        let preview = self.payload.comment?.bodyPreview
-            ?? self.activityTitle(owner: owner, name: name)
+        let url = self.activityURL(owner: owner, name: name)
+        let metadata = self.activityMetadata(owner: owner, name: name, url: url)
+        let baseTitle = metadata.label.isEmpty ? self.displayTitle : metadata.label
+        let preview = self.payload.comment?.bodyPreview ?? baseTitle
+        let trimmed = preview.trimmingCharacters(in: .whitespacesAndNewlines)
+        return ActivityEvent(
+            title: trimmed.isEmpty ? baseTitle : trimmed,
+            actor: self.actor.login,
+            actorAvatarURL: self.actor.avatarUrl,
+            date: self.createdAt,
+            url: url,
+            eventType: self.type,
+            metadata: metadata
+        )
+    }
+
+    private func activityURL(owner: String, name: String) -> URL {
         let repoURL = URL(string: "https://github.com/\(owner)/\(name)")!
         let starURL = repoURL.appending(path: "stargazers")
         let fallbackURL = (self.eventType == .watch) ? starURL : repoURL
         let commitSHA = self.payload.head ?? self.payload.commits?.first?.sha
         let commitURL = commitSHA.map { repoURL.appending(path: "commit").appending(path: $0) }
-        let url = self.payload.comment?.htmlUrl
+        return self.payload.comment?.htmlUrl
             ?? self.payload.issue?.htmlUrl
             ?? self.payload.pullRequest?.htmlUrl
             ?? self.payload.release?.htmlUrl
             ?? self.payload.forkee?.htmlUrl
             ?? commitURL
             ?? fallbackURL
-        let trimmed = preview.trimmingCharacters(in: .whitespacesAndNewlines)
-        return ActivityEvent(
-            title: trimmed.isEmpty ? self.displayTitle : trimmed,
-            actor: self.actor.login,
-            actorAvatarURL: self.actor.avatarUrl,
-            date: self.createdAt,
-            url: url,
-            eventType: self.type
-        )
     }
 
-    private func activityTitle(owner: String, name: String) -> String {
+    private func activityMetadata(owner: String, name: String, url: URL) -> ActivityMetadata {
+        let action = self.activityActionLabel()
+        let target = self.activityTargetLabel(owner: owner, name: name)
+        return ActivityMetadata(actor: self.actor.login, action: action, target: target, url: url)
+    }
+
+    private func activityActionLabel() -> String? {
         let action = self.actionSuffix()
-        let repoTarget = self.repoTarget(owner: owner, name: name)
         switch self.eventType {
         case .pullRequest:
-            return self.issueTitle(prefix: "PR", number: self.payload.pullRequest?.number, title: self.payload.pullRequest?.title, action: action)
+            return self.issueAction(prefix: "PR", action: action)
         case .issues:
-            return self.issueTitle(prefix: "Issue", number: self.payload.issue?.number, title: self.payload.issue?.title, action: action)
+            return self.issueAction(prefix: "Issue", action: action)
         case .release:
-            let tag = self.payload.release?.tagName ?? self.payload.release?.name
-            let base = tag.map { "Release \($0)" } ?? "Release"
+            let base = "Release"
             return action.map { "\(base) \($0)" } ?? base
         case .watch:
             return "Starred"
         case .fork:
-            return self.decorateTarget(base: "Forked", repoTarget: repoTarget)
+            return "Forked"
         case .create:
-            return self.decorateTarget(base: self.refTitle(prefix: "Created"), repoTarget: repoTarget)
+            return self.refTitle(prefix: "Created")
         case .delete:
-            return self.decorateTarget(base: self.refTitle(prefix: "Deleted"), repoTarget: repoTarget)
+            return self.refTitle(prefix: "Deleted")
         default:
-            return self.decorateTarget(base: self.displayTitle, repoTarget: repoTarget)
+            return self.displayTitle
         }
     }
 
-    private func issueTitle(prefix: String, number: Int?, title: String?, action: String?) -> String {
-        var label = prefix
-        if let action { label += " \(action)" }
-        if let number { label += " #\(number)" }
-        if let title, !title.isEmpty { return "\(label): \(title)" }
-        return label
+    private func activityTargetLabel(owner: String, name: String) -> String? {
+        switch self.eventType {
+        case .pullRequest:
+            return self.issueTarget(number: self.payload.pullRequest?.number, title: self.payload.pullRequest?.title)
+        case .issues:
+            return self.issueTarget(number: self.payload.issue?.number, title: self.payload.issue?.title)
+        case .release:
+            return self.payload.release?.tagName ?? self.payload.release?.name
+        case .fork, .create, .delete:
+            return self.repoTarget(owner: owner, name: name).map { "→ \($0)" }
+        default:
+            return nil
+        }
+    }
+
+    private func issueAction(prefix: String, action: String?) -> String {
+        guard let action else { return prefix }
+        return "\(prefix) \(action)"
+    }
+
+    private func issueTarget(number: Int?, title: String?) -> String? {
+        var parts: [String] = []
+        if let number { parts.append("#\(number)") }
+        if let title, !title.isEmpty { parts.append(title) }
+        guard parts.isEmpty == false else { return nil }
+        return parts.joined(separator: ": ")
     }
 
     private func actionSuffix() -> String? {
@@ -380,11 +410,6 @@ extension RepoEvent {
         case let (nil, ref?): return "\(prefix) \(ref)"
         default: return prefix
         }
-    }
-
-    private func decorateTarget(base: String, repoTarget: String?) -> String {
-        guard let repoTarget else { return base }
-        return "\(base) → \(repoTarget)"
     }
 
     static func displayName(for type: ActivityEventType?, raw: String) -> String {

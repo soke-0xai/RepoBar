@@ -136,6 +136,7 @@ public struct ActivityEvent: Codable, Equatable, Sendable {
     public let date: Date
     public let url: URL
     public let eventType: String?
+    public let metadata: ActivityMetadata?
 
     public init(
         title: String,
@@ -143,7 +144,8 @@ public struct ActivityEvent: Codable, Equatable, Sendable {
         actorAvatarURL: URL? = nil,
         date: Date,
         url: URL,
-        eventType: String? = nil
+        eventType: String? = nil,
+        metadata: ActivityMetadata? = nil
     ) {
         self.title = title
         self.actor = actor
@@ -151,6 +153,7 @@ public struct ActivityEvent: Codable, Equatable, Sendable {
         self.date = date
         self.url = url
         self.eventType = eventType
+        self.metadata = metadata
     }
 
     public var eventTypeEnum: ActivityEventType? {
