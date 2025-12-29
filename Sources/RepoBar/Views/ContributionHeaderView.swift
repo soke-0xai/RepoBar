@@ -78,21 +78,33 @@ struct ContributionHeaderView: View {
         } else {
             let filtered = HeatmapFilter.filter(self.session.contributionHeatmap, range: self.session.heatmapRange)
             VStack(spacing: 4) {
-                HeatmapView(cells: filtered, accentTone: self.session.settings.appearance.accentTone, height: 48)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                self.axisLabels
+                HeatmapView(cells: filtered, accentTone: self.session.settings.appearance.accentTone, height: Self.graphHeight)
+                self.axisLabels(cellCount: filtered.count)
             }
             .accessibilityLabel("Contribution graph for \(self.username)")
         }
     }
 
-    private var axisLabels: some View {
+    private func axisLabels(cellCount: Int) -> some View {
         let range = self.session.heatmapRange
-        return HStack {
-            Text(Self.axisFormatter.string(from: range.start))
-            Spacer()
-            Text(Self.axisFormatter.string(from: range.end))
+        return GeometryReader { proxy in
+            let columns = HeatmapLayout.columnCount(cellCount: cellCount)
+            let cellSide = HeatmapLayout.cellSide(
+                forHeight: Self.graphHeight,
+                width: proxy.size.width,
+                columns: columns
+            )
+            let contentWidth = HeatmapLayout.contentWidth(columns: columns, cellSide: cellSide)
+
+            HStack {
+                Text(Self.axisFormatter.string(from: range.start))
+                Spacer()
+                Text(Self.axisFormatter.string(from: range.end))
+            }
+            .frame(width: contentWidth)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
+        .frame(height: 14)
         .font(.caption2)
         .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
     }
@@ -130,4 +142,6 @@ struct ContributionHeaderView: View {
     private var hasCachedHeatmap: Bool {
         self.session.contributionUser == self.username && !self.session.contributionHeatmap.isEmpty
     }
+
+    private static let graphHeight: CGFloat = 48
 }

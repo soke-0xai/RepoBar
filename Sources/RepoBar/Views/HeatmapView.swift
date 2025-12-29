@@ -28,7 +28,8 @@ struct HeatmapView: View {
                 columns: columns
             )
             let grid = HeatmapLayout.reshape(cells: self.cells, columns: columns)
-            let xOffset: CGFloat = 0
+            let contentWidth = HeatmapLayout.contentWidth(columns: columns, cellSide: cellSide)
+            let xOffset = HeatmapLayout.centeredInset(available: size.width, content: contentWidth)
             Canvas { context, _ in
                 for (x, column) in grid.enumerated() {
                     for (y, cell) in column.enumerated() {
@@ -43,7 +44,7 @@ struct HeatmapView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
         .frame(height: self.height)
         .accessibilityLabel(self.summary)
         .accessibilityElement(children: .ignore)
@@ -131,5 +132,15 @@ enum HeatmapLayout {
         return stride(from: 0, to: padded.count, by: self.rows).map { index in
             Array(padded[index ..< min(index + self.rows, padded.count)])
         }
+    }
+
+    static func contentWidth(columns: Int, cellSide: CGFloat) -> CGFloat {
+        let totalSpacingX = CGFloat(max(columns - 1, 0)) * self.spacing
+        return CGFloat(max(columns, 0)) * cellSide + totalSpacingX
+    }
+
+    static func centeredInset(available: CGFloat, content: CGFloat) -> CGFloat {
+        guard available > content else { return 0 }
+        return floor((available - content) / 2)
     }
 }
