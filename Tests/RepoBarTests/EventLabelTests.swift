@@ -109,7 +109,7 @@ struct EventLabelTests {
             createdAt: Date()
         )
         let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
-        #expect(activity.metadata?.label == "PR merged: #42: Ship it")
+        #expect(activity.metadata?.label == "PR merged #42: Ship it")
         #expect(activity.metadata?.deepLink?.absoluteString == "https://example.com/pr/42")
     }
 

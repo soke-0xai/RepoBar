@@ -67,7 +67,8 @@ struct RepositoryPipelineTests {
         ]
         let query = RepositoryQuery(
             scope: .pinned,
-            pinned: ["c/three", "a/one"]
+            pinned: ["c/three", "a/one"],
+            pinPriority: true
         )
         let result = RepositoryPipeline.apply(repos, query: query)
         #expect(result.map(\.fullName) == ["c/three", "a/one"])
