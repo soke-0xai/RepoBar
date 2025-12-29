@@ -105,7 +105,7 @@ final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuring, Menu
         if self.frame.width != width {
             self.frame = NSRect(origin: self.frame.origin, size: NSSize(width: width, height: 10))
         }
-        let size = self.fittingSize
-        return size.height
+        let size = self.sizeThatFits(NSSize(width: width, height: .greatestFiniteMagnitude))
+        return ceil(size.height)
     }
 }
