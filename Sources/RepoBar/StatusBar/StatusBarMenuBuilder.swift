@@ -13,6 +13,7 @@ final class StatusBarMenuBuilder {
     var repoMenuItemCache: [String: NSMenuItem] = [:]
     var repoSubmenuCache: [String: RepoSubmenuCacheEntry] = [:]
     var systemImageCache: [String: NSImage] = [:]
+    let menuItemFactory = MenuItemViewFactory()
 
     init(appState: AppState, target: StatusBarMenuManager) {
         self.appState = appState
