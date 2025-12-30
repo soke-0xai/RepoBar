@@ -441,7 +441,9 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         let signpost = self.signposter.beginInterval("menuWillOpen")
         defer { self.signposter.endInterval("menuWillOpen", signpost) }
-        menu.appearance = NSApp.effectiveAppearance
+        if let app = NSApp {
+            menu.appearance = app.effectiveAppearance
+        }
         if let entry = self.recentListMenus[ObjectIdentifier(menu)] {
             let context = entry.context
             self.menuBuilder.refreshMenuViewHeights(in: menu)
