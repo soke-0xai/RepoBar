@@ -28,10 +28,10 @@ struct AsyncTimeoutTests {
 
         do {
             _ = try await AsyncTimeout.value(within: 0.05, task: task)
-            #expect(false, "Expected timeout")
+            #expect(Bool(false), "Expected timeout")
         } catch is AsyncTimeoutError {
         } catch {
-            #expect(false, "Unexpected error: \(error)")
+            #expect(Bool(false), "Unexpected error: \(error)")
         }
 
         for _ in 0..<10 {
