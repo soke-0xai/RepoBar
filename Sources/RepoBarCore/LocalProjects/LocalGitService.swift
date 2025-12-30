@@ -369,8 +369,7 @@ private func dirtyCounts(at repoURL: URL, git: LocalGitRunner) -> LocalDirtyCoun
             || status.contains("R")
             || status.contains("C")
             || status.contains("T")
-            || status.contains("U")
-        {
+            || status.contains("U") {
             modified.insert(path)
         }
     }
