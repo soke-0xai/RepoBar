@@ -75,6 +75,7 @@
 - Menu item height measurement now adds a 1pt buffer to avoid missing separators.
 - Menu rows now remeasure on menu resize, and highlighted separators stay visible.
 - Repo menu separators now render as their own rows to avoid height clipping.
+- Repo submenu open row now aligns its icon column with submenu items.
 - Open in Finder/Terminal now uses security-scoped bookmarks for local project paths.
 - Heatmap raster view now re-renders on size/backing changes to avoid first-open sizing glitches.
 - Contribution header hides on failures instead of showing an error message.
