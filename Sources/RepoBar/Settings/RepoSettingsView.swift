@@ -141,7 +141,9 @@ private struct RepoInputRow<Accessory: View>: View {
     @State private var suggestions: [Repository] = []
     @State private var isLoading = false
     @State private var showSuggestions = false
-    @State private var selectedIndex: Int?
+    @State private var selectedIndex = -1
+    @State private var keyboardNavigating = false
+    @State private var textFieldSize: CGSize = .zero
     @FocusState private var isFocused: Bool
     @State private var searchTask: Task<Void, Never>?
 
@@ -150,73 +152,61 @@ private struct RepoInputRow<Accessory: View>: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    ZStack(alignment: .trailing) {
-                        TextField(self.placeholder, text: self.$text)
-                            .textFieldStyle(.roundedBorder)
-                            .focused(self.$isFocused)
-                            .onChange(of: self.text) { _, _ in self.scheduleSearch() }
-                            .onSubmit { self.commit() }
-                            .onTapGesture {
-                                self.showSuggestions = true
-                                self.scheduleSearch(immediate: true)
-                            }
-                            .onMoveCommand(perform: self.handleMove)
-
-                        if self.isLoading {
-                            ProgressView()
-                                .controlSize(.small)
-                                .padding(.trailing, 8)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                ZStack(alignment: .trailing) {
+                    TextField(self.placeholder, text: self.$text)
+                        .textFieldStyle(.roundedBorder)
+                        .focused(self.$isFocused)
+                        .onChange(of: self.text) { _, _ in
+                            self.keyboardNavigating = false
+                            self.scheduleSearch()
                         }
-                    }
-
-                    self.accessory()
-
-                    Button(self.buttonTitle) { self.commit() }
-                        .disabled(self.trimmedText.isEmpty)
-                }
-            }
-
-            if self.showSuggestions, !self.suggestions.isEmpty {
-                VStack(spacing: 0) {
-                    ForEach(self.suggestions) { repo in
-                        Button {
-                            self.commit(repo.fullName)
-                        } label: {
-                            HStack {
-                                Text(repo.fullName)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                Spacer()
-                                Text(repo.owner)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 8)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        .onSubmit { self.commit() }
+                        .onTapGesture {
+                            self.showSuggestions = true
+                            self.scheduleSearch(immediate: true)
                         }
-                        .buttonStyle(.plain)
-                        .background(self.isSelected(repo) ? Color.accentColor.opacity(0.12) : .clear)
-                        .contentShape(Rectangle())
+                        .onMoveCommand(perform: self.handleMove)
+                        .background(
+                            GeometryReader { geometry in
+                                Color.clear
+                                    .onAppear { self.textFieldSize = geometry.size }
+                                    .onChange(of: geometry.size) { _, newSize in
+                                        self.textFieldSize = newSize
+                                    }
+                            })
+                        .background(
+                            RepoAutocompleteWindowView(
+                                suggestions: self.suggestions,
+                                selectedIndex: self.$selectedIndex,
+                                keyboardNavigating: self.keyboardNavigating,
+                                onSelect: { suggestion in
+                                    self.commit(suggestion)
+                                    DispatchQueue.main.async {
+                                        self.isFocused = true
+                                    }
+                                },
+                                width: self.textFieldSize.width,
+                                isShowing: Binding(
+                                    get: {
+                                        self.showSuggestions && self.isFocused && !self.suggestions.isEmpty
+                                    },
+                                    set: { self.showSuggestions = $0 })
+                            )
+                        )
 
-                        if repo.id != self.suggestions.last?.id {
-                            Divider()
-                        }
+                    if self.isLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                            .padding(.trailing, 8)
                     }
                 }
-                .frame(maxWidth: 420, alignment: .leading)
-                .background(.regularMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.secondary.opacity(0.2))
-                )
-                .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 4)
-                .padding(.top, 36) // Drop below the text field row
-                .zIndex(10)
+
+                self.accessory()
+
+                Button(self.buttonTitle) { self.commit() }
+                    .disabled(self.trimmedText.isEmpty)
             }
         }
         .onChange(of: self.isFocused) { _, newValue in
@@ -235,6 +225,7 @@ private struct RepoInputRow<Accessory: View>: View {
         self.text = ""
         self.suggestions = []
         self.showSuggestions = false
+        self.selectedIndex = -1
         self.onCommit(trimmed)
     }
 
@@ -263,32 +254,43 @@ private struct RepoInputRow<Accessory: View>: View {
             let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
             let prefetched = try? await self.appState.github.prefetchedRepositories()
 
-            let localMatches: [Repository] = {
-                guard let prefetched else { return [] }
-                let filtered = RepositoryFilter.apply(prefetched, includeForks: includeForks, includeArchived: includeArchived)
-                if trimmed.isEmpty { return Array(filtered.prefix(8)) }
-                return filtered.filter { $0.fullName.localizedCaseInsensitiveContains(trimmed) }
+            let filteredPrefetched = prefetched.map {
+                RepositoryFilter.apply($0, includeForks: includeForks, includeArchived: includeArchived)
+            }
+
+            let localScored: [ScoredSuggestion] = {
+                guard let filteredPrefetched else { return [] }
+                return filteredPrefetched.compactMap { repo in
+                    guard let score = Self.score(repo: repo, query: trimmed) else { return nil }
+                    return ScoredSuggestion(repo: repo, score: score + 30, sourceRank: 0)
+                }
             }()
 
-            var merged = Array(localMatches.prefix(8))
+            var merged = Self.sorted(localScored)
 
             if trimmed.count >= 3 {
                 let remote = try await self.appState.github.searchRepositories(matching: trimmed)
                 let filteredRemote = RepositoryFilter.apply(remote, includeForks: includeForks, includeArchived: includeArchived)
-                merged = Self.merge(local: localMatches, remote: filteredRemote, limit: 8)
+                let remoteScored = filteredRemote.compactMap { repo in
+                    guard let score = Self.score(repo: repo, query: trimmed) else { return nil }
+                    return ScoredSuggestion(repo: repo, score: score, sourceRank: 1)
+                }
+                merged = Self.mergeScored(local: merged, remote: remoteScored, limit: 8)
+            } else {
+                merged = Array(merged.prefix(8))
             }
 
-            if merged.isEmpty, let prefetched {
-                let filtered = RepositoryFilter.apply(prefetched, includeForks: includeForks, includeArchived: includeArchived)
-                merged = Array(filtered.prefix(8)) // Fallback to cached recents if nothing matches.
+            if merged.isEmpty, let filteredPrefetched {
+                merged = filteredPrefetched.prefix(8).map { repo in
+                    ScoredSuggestion(repo: repo, score: 0, sourceRank: 0)
+                }
             }
 
             guard !Task.isCancelled else { return }
             await MainActor.run {
-                self.suggestions = merged
-                if !merged.isEmpty {
-                    let current = self.selectedIndex ?? 0
-                    self.selectedIndex = max(0, min(current, merged.count - 1))
+                self.suggestions = merged.map(\.repo)
+                if self.selectedIndex >= self.suggestions.count {
+                    self.selectedIndex = -1
                 }
                 // Keep suggestions visible while typing even if focus flickers.
                 self.showSuggestions = !self.suggestions.isEmpty && (self.isFocused || !self.trimmedText.isEmpty)
@@ -298,7 +300,7 @@ private struct RepoInputRow<Accessory: View>: View {
             await MainActor.run {
                 self.suggestions = []
                 self.showSuggestions = false
-                self.selectedIndex = nil
+                self.selectedIndex = -1
             }
         }
     }
@@ -306,43 +308,146 @@ private struct RepoInputRow<Accessory: View>: View {
     private func hideSuggestionsSoon() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             self.showSuggestions = false
-            self.selectedIndex = nil
+            self.selectedIndex = -1
         }
     }
 
-    private static func merge(local: [Repository], remote: [Repository], limit: Int) -> [Repository] {
-        var seen = Set<String>()
-        var out: [Repository] = []
-
-        let appendUnique: (Repository) -> Void = { repo in
-            let key = repo.fullName.lowercased()
-            if !seen.contains(key), out.count < limit {
-                seen.insert(key)
-                out.append(repo)
-            }
-        }
-
-        local.forEach(appendUnique)
-        remote.forEach(appendUnique)
-        return out
+    private struct ScoredSuggestion {
+        let repo: Repository
+        let score: Int
+        let sourceRank: Int
     }
 
     private func handleMove(_ direction: MoveCommandDirection) {
         guard !self.suggestions.isEmpty else { return }
         switch direction {
         case .down:
-            let next = (self.selectedIndex ?? -1) + 1
+            self.keyboardNavigating = true
+            let next = self.selectedIndex + 1
             self.selectedIndex = min(next, self.suggestions.count - 1)
         case .up:
-            let prev = (self.selectedIndex ?? 0) - 1
+            self.keyboardNavigating = true
+            let prev = self.selectedIndex - 1
             self.selectedIndex = max(prev, 0)
         default:
             break
         }
     }
 
-    private func isSelected(_ repo: Repository) -> Bool {
-        guard let idx = self.selectedIndex else { return false }
-        return self.suggestions.indices.contains(idx) && self.suggestions[idx].id == repo.id
+    private static func sorted(_ scored: [ScoredSuggestion]) -> [ScoredSuggestion] {
+        scored.sorted {
+            if $0.score != $1.score { return $0.score > $1.score }
+            if $0.sourceRank != $1.sourceRank { return $0.sourceRank < $1.sourceRank }
+            return $0.repo.fullName.localizedCaseInsensitiveCompare($1.repo.fullName) == .orderedAscending
+        }
+    }
+
+    private static func mergeScored(
+        local: [ScoredSuggestion],
+        remote: [ScoredSuggestion],
+        limit: Int
+    ) -> [ScoredSuggestion] {
+        var bestByKey: [String: ScoredSuggestion] = [:]
+        let insert: (ScoredSuggestion) -> Void = { scored in
+            let key = scored.repo.fullName.lowercased()
+            if let existing = bestByKey[key] {
+                if scored.score > existing.score {
+                    bestByKey[key] = scored
+                }
+            } else {
+                bestByKey[key] = scored
+            }
+        }
+        local.forEach(insert)
+        remote.forEach(insert)
+        return Array(Self.sorted(Array(bestByKey.values)).prefix(limit))
+    }
+
+    private static func score(repo: Repository, query: String) -> Int? {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let lowerQuery = trimmed.lowercased()
+        let fullName = repo.fullName.lowercased()
+        if fullName == lowerQuery { return 1_000 }
+        if fullName.hasPrefix(lowerQuery) { return 700 }
+
+        let parts = lowerQuery.split(separator: "/", omittingEmptySubsequences: false)
+        let ownerQuery = parts.count > 1 ? String(parts[0]) : nil
+        let repoQuery = parts.count > 1 ? String(parts[1]) : lowerQuery
+
+        let ownerScore = Self.componentScore(
+            query: ownerQuery ?? "",
+            target: repo.owner,
+            exact: 200,
+            prefix: 120,
+            substring: 80,
+            subsequence: 40)
+        let repoScore = Self.componentScore(
+            query: repoQuery,
+            target: repo.name,
+            exact: 600,
+            prefix: 420,
+            substring: 260,
+            subsequence: 160)
+
+        var score = 0
+        if let ownerScore, ownerQuery != nil {
+            score += ownerScore
+        }
+        if let repoScore {
+            score += repoScore
+        }
+
+        if ownerQuery == nil {
+            if repoScore == nil {
+                let ownerFallback = Self.componentScore(
+                    query: lowerQuery,
+                    target: repo.owner,
+                    exact: 120,
+                    prefix: 80,
+                    substring: 60,
+                    subsequence: 30)
+                guard let ownerFallback else { return nil }
+                score += ownerFallback
+            }
+        } else if (ownerScore == nil && repoScore == nil) {
+            return nil
+        }
+
+        if ownerScore != nil, repoScore != nil {
+            score += 40
+        }
+        return score == 0 ? nil : score
+    }
+
+    private static func componentScore(
+        query: String,
+        target: String,
+        exact: Int,
+        prefix: Int,
+        substring: Int,
+        subsequence: Int
+    ) -> Int? {
+        guard !query.isEmpty else { return 0 }
+        let lowerTarget = target.lowercased()
+        if lowerTarget == query { return exact }
+        if lowerTarget.hasPrefix(query) { return prefix }
+        if lowerTarget.contains(query) { return substring }
+        if Self.isSubsequence(query, of: lowerTarget) { return subsequence }
+        return nil
+    }
+
+    private static func isSubsequence(_ needle: String, of haystack: String) -> Bool {
+        var needleIndex = needle.startIndex
+        var haystackIndex = haystack.startIndex
+
+        while needleIndex < needle.endIndex && haystackIndex < haystack.endIndex {
+            if needle[needleIndex] == haystack[haystackIndex] {
+                needleIndex = needle.index(after: needleIndex)
+            }
+            haystackIndex = haystack.index(after: haystackIndex)
+        }
+
+        return needleIndex == needle.endIndex
     }
 }
