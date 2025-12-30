@@ -22,7 +22,7 @@ struct AsyncTimeoutTests {
                 try await Task.sleep(nanoseconds: 2_000_000_000)
                 return 1
             } onCancel: {
-                Task { await cancellationFlag.markCancelled() }
+                Task.detached { await cancellationFlag.markCancelled() }
             }
         }
 
