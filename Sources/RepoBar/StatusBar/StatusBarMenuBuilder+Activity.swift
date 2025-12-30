@@ -16,7 +16,6 @@ extension StatusBarMenuBuilder {
                 systemImage: "person.crop.circle"
             ))
         }
-        menu.addItem(.separator())
 
         if let error = self.appState.session.globalActivityError {
             menu.addItem(self.infoMessageItem(error))
