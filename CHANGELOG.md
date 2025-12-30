@@ -28,6 +28,9 @@
 - repobar debug builds are now codesigned with a stable identifier (no repeated Keychain prompts after rebuilds).
 - repobar CLI now installs as `repobar` (with `repobarcli` alias via pnpm).
 - mac app now caches repo detail fetches for 1 hour to reduce API usage.
+- Release packaging now produces universal app bundles (arm64 + x86_64).
+- Debug builds now default local projects to `~/Projects`.
+- RepoBar now runs without the app sandbox (security-scoped bookmarks remain for compatibility).
 - mac app image loading now uses Kingfisher (replacing Nuke).
 - Token refresh now preserves OAuth client credentials and shows a clearer error when refresh fails.
 - Menubar repository rows now use tighter, more native spacing with submenu indicators and icons.
