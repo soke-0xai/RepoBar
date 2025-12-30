@@ -30,8 +30,8 @@ fi
 echo "$APP_STORE_CONNECT_API_KEY_P8" | sed 's/\\n/\n/g' > /tmp/repobar-api-key.p8
 trap 'rm -f /tmp/repobar-api-key.p8 /tmp/RepoBarNotarize.zip' EXIT
 
-swift build -c release --arch arm64
-./Scripts/package_app.sh release
+swift build -c release --arch arm64 --arch x86_64
+SKIP_BUILD=1 ./Scripts/package_app.sh release
 
 echo "Signing with $APP_IDENTITY"
 ./Scripts/codesign_app.sh "$APP_BUNDLE" "$APP_IDENTITY"
@@ -55,7 +55,16 @@ spctl -a -t exec -vv "$APP_BUNDLE"
 stapler validate "$APP_BUNDLE"
 
 echo "Packaging dSYM"
-DSYM_PATH=".build/arm64-apple-macosx/release/RepoBar.dSYM"
+DSYM_PATH=".build/apple/Products/Release/RepoBar.dSYM"
+if [[ ! -d "$DSYM_PATH" ]]; then
+  DSYM_PATH=".build/release/RepoBar.dSYM"
+fi
+if [[ ! -d "$DSYM_PATH" ]]; then
+  DSYM_PATH=".build/arm64-apple-macosx/release/RepoBar.dSYM"
+fi
+if [[ ! -d "$DSYM_PATH" ]]; then
+  DSYM_PATH=".build/x86_64-apple-macosx/release/RepoBar.dSYM"
+fi
 if [[ ! -d "$DSYM_PATH" ]]; then
   echo "Missing dSYM at $DSYM_PATH" >&2
   exit 1

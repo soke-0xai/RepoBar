@@ -53,7 +53,11 @@ public struct LocalProjectsSettings: Equatable, Codable {
     public var ghosttyOpenMode: GhosttyOpenMode = .tab
     public var preferredLocalPathsByFullName: [String: String] = [:]
 
-    public init() {}
+    public init() {
+        #if DEBUG
+            self.rootPath = "~/Projects"
+        #endif
+    }
 }
 
 public enum LocalProjectsRefreshInterval: String, CaseIterable, Equatable, Codable {

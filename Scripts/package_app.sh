@@ -3,6 +3,7 @@ set -euo pipefail
 CONFIGURATION=${1:-debug}
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="RepoBar"
+ARCH_ARGS=()
 
 # Load version info
 source "$ROOT_DIR/version.env"
@@ -14,11 +15,20 @@ if [ "${SKIP_BUILD:-0}" -eq 1 ]; then
   log "==> Skipping build (${CONFIGURATION})"
 else
   log "==> Building ${APP_NAME} (${CONFIGURATION})"
-  swift build -c "${CONFIGURATION}"
-  swift build -c "${CONFIGURATION}" --product repobarcli
+  if [ "${CONFIGURATION}" = "release" ]; then
+    ARCH_ARGS=(--arch arm64 --arch x86_64)
+  fi
+  swift build -c "${CONFIGURATION}" "${ARCH_ARGS[@]}"
+  swift build -c "${CONFIGURATION}" "${ARCH_ARGS[@]}" --product repobarcli
 fi
 
 BUILD_DIR="${ROOT_DIR}/.build/${CONFIGURATION}"
+if [ "${CONFIGURATION}" = "release" ]; then
+  UNIVERSAL_DIR="${ROOT_DIR}/.build/apple/Products/Release"
+  if [ -f "${UNIVERSAL_DIR}/${APP_NAME}" ]; then
+    BUILD_DIR="${UNIVERSAL_DIR}"
+  fi
+fi
 if [ ! -d "${BUILD_DIR}" ]; then
   fail "Build dir not found: ${BUILD_DIR}"
 fi
@@ -117,7 +127,7 @@ fi
 
 # Package dSYM (release builds only)
 if [ "${CONFIGURATION}" = "release" ]; then
-  DSYM_DIR="${ROOT_DIR}/.build/${CONFIGURATION}/${APP_NAME}.dSYM"
+  DSYM_DIR="${BUILD_DIR}/${APP_NAME}.dSYM"
   if [ -d "${DSYM_DIR}" ]; then
     DSYM_ZIP="${ROOT_DIR}/${APP_NAME}-${MARKETING_VERSION}.dSYM.zip"
     log "==> Zipping dSYM to ${DSYM_ZIP}"
