@@ -6,26 +6,25 @@ struct RecentIssueFiltersView: View {
     let labels: [RecentIssueLabelOption]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Picker("Scope", selection: self.$session.recentIssueScope) {
-                    ForEach(RecentIssueScope.allCases, id: \.self) { scope in
-                        Text(scope.label).tag(scope)
-                    }
+        HStack(spacing: 8) {
+            Picker("Scope", selection: self.$session.recentIssueScope) {
+                ForEach(RecentIssueScope.allCases, id: \.self) { scope in
+                    Text(scope.label).tag(scope)
                 }
-                .labelsHidden()
-                .font(.subheadline)
-                .pickerStyle(.segmented)
-                .controlSize(.small)
-                .fixedSize()
-
-                Spacer(minLength: 2)
             }
+            .labelsHidden()
+            .font(.subheadline)
+            .pickerStyle(.segmented)
+            .controlSize(.small)
+            .fixedSize()
 
-            IssueLabelFilterChipsView(
-                selection: self.$session.recentIssueLabelSelection,
-                labels: self.labels
-            )
+            ScrollView(.horizontal, showsIndicators: false) {
+                IssueLabelFilterChipsView(
+                    selection: self.$session.recentIssueLabelSelection,
+                    labels: self.labels
+                )
+                .padding(.vertical, 1)
+            }
         }
         .padding(.horizontal, MenuStyle.filterHorizontalPadding)
         .padding(.vertical, MenuStyle.filterVerticalPadding)
@@ -44,7 +43,7 @@ private struct IssueLabelFilterChipsView: View {
     let labels: [RecentIssueLabelOption]
 
     var body: some View {
-        FlowLayout(itemSpacing: 6, lineSpacing: 4) {
+        HStack(spacing: 6) {
             IssueLabelFilterChip(
                 title: "All",
                 colorHex: nil,
