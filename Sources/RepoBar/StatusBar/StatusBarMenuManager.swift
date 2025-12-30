@@ -259,6 +259,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         menu.appearance = NSApp.effectiveAppearance
         if let entry = self.recentListMenus[ObjectIdentifier(menu)] {
             let context = entry.context
+            self.menuBuilder.refreshMenuViewHeights(in: menu)
             Task { @MainActor [weak self] in
                 await self?.refreshRecentListMenu(menu: menu, context: context)
             }
@@ -305,6 +306,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             }
         } else if let fullName = menu.items.first?.representedObject as? String, fullName.contains("/") {
             // Repo submenu opened; prefetch so nested recent lists appear instantly.
+            self.menuBuilder.refreshMenuViewHeights(in: menu)
             self.prefetchRecentLists(fullNames: [fullName])
         }
     }

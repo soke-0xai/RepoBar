@@ -358,7 +358,6 @@ final class StatusBarMenuBuilder {
             }
         }
 
-        self.refreshMenuViewHeights(in: menu)
         return menu
     }
 
