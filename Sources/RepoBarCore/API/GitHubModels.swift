@@ -89,8 +89,43 @@ struct ActionsRunsResponse: Decodable {
     }
 
     struct WorkflowRun: Decodable {
+        let id: Int?
+        let name: String?
+        let displayTitle: String?
+        let runNumber: Int?
+        let event: String?
+        let headBranch: String?
         let status: String?
         let conclusion: String?
+        let htmlUrl: URL?
+        let createdAt: Date?
+        let updatedAt: Date?
+        let actor: Actor?
+
+        struct Actor: Decodable {
+            let login: String
+            let avatarUrl: URL?
+
+            enum CodingKeys: String, CodingKey {
+                case login
+                case avatarUrl = "avatar_url"
+            }
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case id
+            case name
+            case displayTitle = "display_title"
+            case runNumber = "run_number"
+            case event
+            case headBranch = "head_branch"
+            case status
+            case conclusion
+            case htmlUrl = "html_url"
+            case createdAt = "created_at"
+            case updatedAt = "updated_at"
+            case actor
+        }
     }
 }
 

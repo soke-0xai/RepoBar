@@ -628,12 +628,7 @@ public actor GitHubClient {
         let (data, _) = try await authorizedGet(url: components.url!, token: token)
         let runs = try jsonDecoder.decode(ActionsRunsResponse.self, from: data)
         guard let run = runs.workflowRuns.first else { return CIStatusDetails(status: .unknown, runCount: runs.totalCount) }
-        let status: CIStatus = switch run.conclusion ?? run.status {
-        case "success": .passing
-        case "failure", "cancelled", "timed_out": .failing
-        case "in_progress", "queued", "waiting": .pending
-        default: .unknown
-        }
+        let status = Self.ciStatus(fromStatus: run.status, conclusion: run.conclusion)
         return CIStatusDetails(status: status, runCount: runs.totalCount)
     }
 
@@ -773,6 +768,18 @@ public actor GitHubClient {
         return try Self.decodeRecentReleases(from: data)
     }
 
+    public func recentWorkflowRuns(owner: String, name: String, limit: Int = 20) async throws -> [RepoWorkflowRunSummary] {
+        let token = try await validAccessToken()
+        let limit = max(1, min(limit, 100))
+        var components = URLComponents(
+            url: apiHost.appending(path: "/repos/\(owner)/\(name)/actions/runs"),
+            resolvingAgainstBaseURL: false
+        )!
+        components.queryItems = [URLQueryItem(name: "per_page", value: "\(limit)")]
+        let (data, _) = try await authorizedGet(url: components.url!, token: token)
+        return try Self.decodeRecentWorkflowRuns(from: data)
+    }
+
     /// Most recent release (including prereleases) ordered by creation date; skips drafts.
     /// Returns `nil` if the repository has no releases.
     private func latestReleaseAny(owner: String, name: String) async throws -> Release? {
@@ -853,6 +860,45 @@ public actor GitHubClient {
                     downloadCount: downloads
                 )
             }
+    }
+
+    static func decodeRecentWorkflowRuns(from data: Data) throws -> [RepoWorkflowRunSummary] {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let response = try decoder.decode(ActionsRunsResponse.self, from: data)
+        return response.workflowRuns.compactMap { run in
+            guard let url = run.htmlUrl else { return nil }
+            let title = workflowRunTitle(run)
+            let updatedAt = run.updatedAt ?? run.createdAt ?? Date.distantPast
+            return RepoWorkflowRunSummary(
+                name: title,
+                url: url,
+                updatedAt: updatedAt,
+                status: ciStatus(fromStatus: run.status, conclusion: run.conclusion),
+                conclusion: run.conclusion,
+                branch: run.headBranch,
+                event: run.event,
+                actorLogin: run.actor?.login,
+                actorAvatarURL: run.actor?.avatarUrl,
+                runNumber: run.runNumber
+            )
+        }
+    }
+
+    private static func workflowRunTitle(_ run: ActionsRunsResponse.WorkflowRun) -> String {
+        let preferred = (run.displayTitle ?? run.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if preferred.isEmpty == false { return preferred }
+        if let runNumber = run.runNumber { return "Run #\(runNumber)" }
+        return "Workflow run"
+    }
+
+    private static func ciStatus(fromStatus status: String?, conclusion: String?) -> CIStatus {
+        switch conclusion ?? status {
+        case "success": return .passing
+        case "failure", "cancelled", "timed_out": return .failing
+        case "in_progress", "queued", "waiting": return .pending
+        default: return .unknown
+        }
     }
 
     private struct PullRequestRecentResponse: Decodable {

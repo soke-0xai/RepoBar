@@ -117,3 +117,40 @@ public struct RepoReleaseSummary: Sendable, Hashable {
         self.downloadCount = downloadCount
     }
 }
+
+public struct RepoWorkflowRunSummary: Sendable, Hashable {
+    public let name: String
+    public let url: URL
+    public let updatedAt: Date
+    public let status: CIStatus
+    public let conclusion: String?
+    public let branch: String?
+    public let event: String?
+    public let actorLogin: String?
+    public let actorAvatarURL: URL?
+    public let runNumber: Int?
+
+    public init(
+        name: String,
+        url: URL,
+        updatedAt: Date,
+        status: CIStatus,
+        conclusion: String?,
+        branch: String?,
+        event: String?,
+        actorLogin: String?,
+        actorAvatarURL: URL?,
+        runNumber: Int?
+    ) {
+        self.name = name
+        self.url = url
+        self.updatedAt = updatedAt
+        self.status = status
+        self.conclusion = conclusion
+        self.branch = branch
+        self.event = event
+        self.actorLogin = actorLogin
+        self.actorAvatarURL = actorAvatarURL
+        self.runNumber = runNumber
+    }
+}

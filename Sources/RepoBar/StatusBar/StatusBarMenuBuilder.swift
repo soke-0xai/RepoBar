@@ -181,13 +181,17 @@ final class StatusBarMenuBuilder {
             openAction: #selector(self.target.openReleases),
             badgeText: cachedReleaseCount.flatMap { $0 > 0 ? String($0) : nil }
         )))
+        let runBadge = repo.ciRunCount.flatMap { $0 > 0 ? String($0) : nil }
+        menu.addItem(self.recentListSubmenuItem(RecentListConfig(
+            title: "CI Runs",
+            systemImage: "bolt",
+            fullName: repo.title,
+            kind: .ciRuns,
+            openTitle: "Open Actions",
+            openAction: #selector(self.target.openActions),
+            badgeText: runBadge
+        )))
 
-        menu.addItem(self.actionItem(
-            title: "Open Actions",
-            action: #selector(self.target.openActions),
-            represented: repo.title,
-            systemImage: "bolt"
-        ))
         if repo.activityURL != nil {
             menu.addItem(self.actionItem(
                 title: "Open Activity",
@@ -373,9 +377,6 @@ final class StatusBarMenuBuilder {
         if let local = repo.localStatus {
             items.append(self.infoItem("Branch: \(local.branch)"))
             items.append(self.infoItem("Sync: \(local.syncDetail)"))
-        }
-        if let runCount = repo.ciRunCount {
-            items.append(self.infoItem("CI runs: \(runCount)"))
         }
         if let visitors = repo.trafficVisitors {
             items.append(self.infoItem("Visitors (14d): \(visitors)"))
