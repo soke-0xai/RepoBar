@@ -335,10 +335,10 @@ final class StatusBarMenuBuilder {
            let windowWidth = view.window?.frame.width,
            windowWidth > 0
         {
-            return windowWidth
+            return max(windowWidth, Self.menuFixedWidth)
         }
         let menuWidth = menu.size.width
-        if menuWidth > 0 { return menuWidth }
+        if menuWidth > 0 { return max(menuWidth, Self.menuFixedWidth) }
         return Self.menuFixedWidth
     }
 
