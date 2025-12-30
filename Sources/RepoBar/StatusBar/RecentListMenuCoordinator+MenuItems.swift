@@ -214,7 +214,7 @@ extension RecentListMenuCoordinator {
         menu.autoenablesItems = false
         let all = NSMenuItem(title: "All Labels", action: #selector(StatusBarMenuManager.clearIssueLabelFilters), keyEquivalent: "")
         all.target = self.actionHandler
-        all.state = self.appState.session.recentIssueLabelSelection.isEmpty ? .on : .off
+        all.state = self.appState.session.recentIssueLabelSelection.isEmpty ? NSControl.StateValue.on : NSControl.StateValue.off
         menu.addItem(all)
         menu.addItem(.separator())
 
@@ -223,7 +223,7 @@ extension RecentListMenuCoordinator {
             let item = NSMenuItem(title: title, action: #selector(StatusBarMenuManager.toggleIssueLabelFilter(_:)), keyEquivalent: "")
             item.target = self.actionHandler
             item.representedObject = option.name
-            item.state = self.appState.session.recentIssueLabelSelection.contains(option.name) ? .on : .off
+            item.state = self.appState.session.recentIssueLabelSelection.contains(option.name) ? NSControl.StateValue.on : NSControl.StateValue.off
             menu.addItem(item)
         }
 
@@ -452,4 +452,3 @@ enum ListMenuContent {
     case message(String)
     case items(isEmpty: Bool, emptyTitle: String?, render: (NSMenu) -> Void)
 }
-

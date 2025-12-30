@@ -212,7 +212,9 @@ final class RecentMenuService {
             load: { key, owner, name, limit in
                 let task = self.recentCommitsCache.task(for: key) {
                     let list = try await self.github.recentCommits(owner: owner, name: name, limit: limit)
-                    self.recentCommitCounts[key] = list.totalCount ?? list.items.count
+                    await MainActor.run {
+                        self.recentCommitCounts[key] = list.totalCount ?? list.items.count
+                    }
                     return list.items
                 }
                 defer { self.recentCommitsCache.clearInflight(for: key) }

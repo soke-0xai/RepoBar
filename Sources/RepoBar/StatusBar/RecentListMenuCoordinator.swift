@@ -169,7 +169,7 @@ final class RecentListMenuCoordinator {
                     self.renderRecentItems(items, for: context.kind, repoFullName: context.fullName, menu: menu)
                 })
             )
-        } catch let error as AsyncTimeout.TimeoutError {
+        } catch is AsyncTimeoutError {
             if stale == nil {
                 self.populateRecentListMenu(
                     menu,

@@ -118,7 +118,7 @@ struct WorkflowRunMenuRowViewModel: RecentRowViewModel {
     var event: String? { self.summary.event }
     var actorLogin: String? { self.summary.actorLogin }
     var updatedAt: Date { self.summary.updatedAt }
-    var status: RepoWorkflowRunStatus { self.summary.status }
+    var status: CIStatus { self.summary.status }
     var url: URL { self.summary.url }
 }
 

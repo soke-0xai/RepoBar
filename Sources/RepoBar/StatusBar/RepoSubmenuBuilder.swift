@@ -1,4 +1,5 @@
 import AppKit
+import OSLog
 import RepoBarCore
 import SwiftUI
 
@@ -8,7 +9,7 @@ struct RepoSubmenuBuilder {
 
     private var appState: AppState { self.menuBuilder.appState }
     private var target: StatusBarMenuManager { self.menuBuilder.target }
-    private var signposter { self.menuBuilder.signposter }
+    private var signposter: OSSignposter { self.menuBuilder.signposter }
 
     func makeRepoSubmenu(for repo: RepositoryDisplayModel, isPinned: Bool) -> NSMenu {
         let signpost = self.signposter.beginInterval("makeRepoSubmenu")

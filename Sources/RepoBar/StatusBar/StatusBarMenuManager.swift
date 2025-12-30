@@ -4,7 +4,7 @@ import RepoBarCore
 
 @MainActor
 final class StatusBarMenuManager: NSObject, NSMenuDelegate {
-    private let appState: AppState
+    let appState: AppState
     private var mainMenu: NSMenu?
     private weak var statusItem: NSStatusItem?
     private lazy var menuBuilder = StatusBarMenuBuilder(appState: self.appState, target: self)
@@ -108,12 +108,12 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         self.recentListCoordinator.handleFilterChanges()
     }
 
-    @objc private func toggleIssueLabelFilter(_ sender: NSMenuItem) {
+    @objc func toggleIssueLabelFilter(_ sender: NSMenuItem) {
         guard let label = sender.representedObject as? String else { return }
         self.recentListCoordinator.toggleIssueLabelFilter(label: label)
     }
 
-    @objc private func clearIssueLabelFilters() {
+    @objc func clearIssueLabelFilters() {
         self.recentListCoordinator.clearIssueLabelFilters()
     }
 
