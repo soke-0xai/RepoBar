@@ -262,7 +262,7 @@ private struct GitExecutableLocator: Sendable {
     }
 
     private static var isSandboxed: Bool {
-        let task = SecTaskCreateFromSelf(nil)
+        guard let task = SecTaskCreateFromSelf(nil) else { return false }
         let entitlement = SecTaskCopyValueForEntitlement(task, "com.apple.security.app-sandbox" as CFString, nil)
         return (entitlement as? Bool) == true
     }
