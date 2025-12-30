@@ -50,17 +50,17 @@ struct LocalRepoStateMenuView: View {
                     enabled: self.resetEnabled,
                     action: self.onReset
                 )
-                Spacer(minLength: 8)
-                self.actionButton(
-                    title: "Finder",
+            }
+            Divider()
+            VStack(spacing: 4) {
+                self.menuEntryButton(
+                    title: "Open in Finder",
                     systemImage: "folder",
-                    enabled: true,
                     action: self.onOpenFinder
                 )
-                self.actionButton(
-                    title: "Terminal",
+                self.menuEntryButton(
+                    title: "Open in Terminal",
                     systemImage: "terminal",
-                    enabled: true,
                     action: self.onOpenTerminal
                 )
             }
@@ -126,6 +126,15 @@ struct LocalRepoStateMenuView: View {
         )
     }
 
+    private func menuEntryButton(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        LocalRepoMenuEntryButton(
+            title: title,
+            systemImage: systemImage,
+            isHighlighted: self.isHighlighted,
+            action: action
+        )
+    }
+
     private func localSyncColor(for state: LocalSyncState) -> Color {
         if self.isHighlighted { return MenuHighlightStyle.selectionText }
         let isLightAppearance = NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua
@@ -169,6 +178,42 @@ private struct LocalRepoActionButton: View {
         .background(self.hoverBackground, in: Capsule(style: .continuous))
         .opacity(self.enabled ? 1 : 0.5)
         .disabled(!self.enabled)
+        .onHover { self.isHovered = $0 }
+    }
+
+    private var hoverBackground: Color {
+        guard self.isHovered else { return .clear }
+        if self.isHighlighted {
+            return MenuHighlightStyle.selectionText.opacity(0.18)
+        }
+        return Color(nsColor: .controlAccentColor).opacity(0.12)
+    }
+}
+
+private struct LocalRepoMenuEntryButton: View {
+    let title: String
+    let systemImage: String
+    let isHighlighted: Bool
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: self.action) {
+            HStack(spacing: 8) {
+                Image(systemName: self.systemImage)
+                    .font(.caption)
+                Text(self.title)
+                    .font(.caption)
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(MenuHighlightStyle.primary(self.isHighlighted))
+        .background(self.hoverBackground, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
         .onHover { self.isHovered = $0 }
     }
 

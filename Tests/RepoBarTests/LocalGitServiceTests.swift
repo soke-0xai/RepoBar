@@ -79,6 +79,7 @@ struct LocalGitServiceTests {
             #expect(error == .dirtyWorkingTree)
         }
     }
+
     @Test
     func createBranch_createsAndSwitches() async throws {
         let root = try makeTempDirectory()
@@ -164,7 +165,10 @@ struct LocalGitServiceTests {
         let detachedEntry = worktrees.first { $0.path.standardizedFileURL == detached.standardizedFileURL }
         #expect(detachedEntry?.branch == nil)
         #expect(detachedEntry?.isCurrent == false)
-        #expect(worktrees.contains(where: { $0.isCurrent }))
+        let hasCurrent = worktrees.contains(where: { worktree in
+            worktree.isCurrent
+        })
+        #expect(hasCurrent)
     }
 
     @Test
