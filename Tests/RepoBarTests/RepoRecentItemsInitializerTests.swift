@@ -106,4 +106,3 @@ struct RepoRecentItemsInitializerTests {
         #expect(list.totalCount == 20)
     }
 }
-

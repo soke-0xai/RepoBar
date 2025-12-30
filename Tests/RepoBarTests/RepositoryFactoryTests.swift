@@ -73,4 +73,3 @@ struct RepositoryFactoryTests {
         #expect(repo.heatmap.isEmpty)
     }
 }
-
