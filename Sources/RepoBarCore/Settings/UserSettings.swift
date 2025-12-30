@@ -147,7 +147,7 @@ public enum AccentTone: String, CaseIterable, Equatable, Codable {
     }
 }
 
-public enum GlobalActivityScope: String, CaseIterable, Equatable, Codable {
+public enum GlobalActivityScope: String, CaseIterable, Equatable, Codable, Sendable {
     case allActivity
     case myActivity
 

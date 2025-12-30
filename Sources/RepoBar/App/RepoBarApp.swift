@@ -263,13 +263,13 @@ final class AppState {
                       user.username.isEmpty == false else { return nil }
                 return user.username
             }()
-            let globalActivityTask = Task { [weak self] -> GlobalActivityResult in
+            let globalActivityTask = Task { [weak self] in
                 guard let self, let activityUsername else {
                     return GlobalActivityResult(events: [], error: nil)
                 }
                 return await self.fetchGlobalActivityEvents(
                     username: activityUsername,
-                    scope: settings.appearance.activityScope,
+                    scope: self.session.settings.appearance.activityScope,
                     repos: final
                 )
             }
