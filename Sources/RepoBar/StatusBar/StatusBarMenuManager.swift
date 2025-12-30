@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import OSLog
 import RepoBarCore
 import SwiftUI
 
@@ -9,6 +10,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private var mainMenu: NSMenu?
     private weak var statusItem: NSStatusItem?
     private lazy var menuBuilder = StatusBarMenuBuilder(appState: self.appState, target: self)
+    private let signposter = OSSignposter(subsystem: "com.steipete.repobar", category: "menu")
     private var recentListMenus: [ObjectIdentifier: RecentListMenuEntry] = [:]
     private weak var menuResizeWindow: NSWindow?
     private var lastMainMenuWidth: CGFloat?
@@ -250,6 +252,8 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
+        let signpost = self.signposter.beginInterval("menuWillOpen")
+        defer { self.signposter.endInterval("menuWillOpen", signpost) }
         menu.appearance = NSApp.effectiveAppearance
         if let entry = self.recentListMenus[ObjectIdentifier(menu)] {
             let context = entry.context

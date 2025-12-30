@@ -1,4 +1,5 @@
 import AppKit
+import OSLog
 import RepoBarCore
 import SwiftUI
 
@@ -8,6 +9,7 @@ final class StatusBarMenuBuilder {
 
     private let appState: AppState
     private unowned let target: StatusBarMenuManager
+    private let signposter = OSSignposter(subsystem: "com.steipete.repobar", category: "menu")
 
     init(appState: AppState, target: StatusBarMenuManager) {
         self.appState = appState
@@ -23,6 +25,8 @@ final class StatusBarMenuBuilder {
     }
 
     func populateMainMenu(_ menu: NSMenu) {
+        let signpost = self.signposter.beginInterval("populateMainMenu")
+        defer { self.signposter.endInterval("populateMainMenu", signpost) }
         menu.removeAllItems()
         let session = self.appState.session
         let settings = session.settings
@@ -141,6 +145,8 @@ final class StatusBarMenuBuilder {
     }
 
     func makeRepoSubmenu(for repo: RepositoryDisplayModel, isPinned: Bool) -> NSMenu {
+        let signpost = self.signposter.beginInterval("makeRepoSubmenu")
+        defer { self.signposter.endInterval("makeRepoSubmenu", signpost) }
         let menu = NSMenu()
         menu.autoenablesItems = false
         menu.delegate = self.target
@@ -378,10 +384,14 @@ final class StatusBarMenuBuilder {
     }
 
     func refreshMenuViewHeights(in menu: NSMenu) {
+        let signpost = self.signposter.beginInterval("refreshMenuViewHeights")
+        defer { self.signposter.endInterval("refreshMenuViewHeights", signpost) }
         self.refreshMenuViewHeights(in: menu, width: self.menuWidth(for: menu))
     }
 
     func refreshMenuViewHeights(in menu: NSMenu, width: CGFloat) {
+        let signpost = self.signposter.beginInterval("refreshMenuViewHeightsWidth")
+        defer { self.signposter.endInterval("refreshMenuViewHeightsWidth", signpost) }
         for item in menu.items {
             guard let view = item.view,
                   let measuring = view as? MenuItemMeasuring else { continue }
@@ -397,6 +407,8 @@ final class StatusBarMenuBuilder {
     }
 
     func menuWidth(for menu: NSMenu) -> CGFloat {
+        let signpost = self.signposter.beginInterval("menuWidth")
+        defer { self.signposter.endInterval("menuWidth", signpost) }
         if let view = menu.items.compactMap(\.view).first {
             if let contentWidth = view.window?.contentView?.bounds.width, contentWidth > 0 {
                 return max(contentWidth, Self.menuFixedWidth)
