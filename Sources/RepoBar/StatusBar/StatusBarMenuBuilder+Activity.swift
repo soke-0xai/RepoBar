@@ -1,5 +1,6 @@
 import AppKit
 import RepoBarCore
+
 extension StatusBarMenuBuilder {
     func contributionSubmenu(username: String, displayName: String) -> NSMenu {
         self.target.activityMenuCoordinator.contributionSubmenu(username: username, displayName: displayName)

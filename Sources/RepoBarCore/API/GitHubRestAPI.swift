@@ -25,7 +25,7 @@ struct GitHubRestAPI {
 
     /// Pulls paginated `/user/repos` in 100-item pages until the limit is reached or GitHub runs out.
     func userReposPaginated(limit: Int?) async throws -> [RepoItem] {
-        try await fetchAllPages(
+        try await self.fetchAllPages(
             path: "/user/repos",
             queryItems: [
                 URLQueryItem(name: "sort", value: "pushed"),
@@ -52,7 +52,7 @@ struct GitHubRestAPI {
 
     func fetchCurrentUser() async throws -> CurrentUser {
         let token = try await tokenProvider()
-        let url = apiHost().appending(path: "/user")
+        let url = self.apiHost().appending(path: "/user")
         let (data, _) = try await authorizedGet(url: url, token: token)
         return try GitHubDecoding.decode(CurrentUser.self, from: data)
     }
@@ -85,7 +85,7 @@ struct GitHubRestAPI {
 
     func repoDetails(owner: String, name: String) async throws -> RepoItem {
         let token = try await tokenProvider()
-        let url = apiHost().appending(path: "/repos/\(owner)/\(name)")
+        let url = self.apiHost().appending(path: "/repos/\(owner)/\(name)")
         let (data, _) = try await authorizedGet(url: url, token: token)
         return try GitHubDecoding.decode(RepoItem.self, from: data)
     }
@@ -130,8 +130,8 @@ struct GitHubRestAPI {
     func trafficStats(owner: String, name: String) async throws -> TrafficStats? {
         do {
             let token = try await tokenProvider()
-            let viewsURL = apiHost().appending(path: "/repos/\(owner)/\(name)/traffic/views")
-            let clonesURL = apiHost().appending(path: "/repos/\(owner)/\(name)/traffic/clones")
+            let viewsURL = self.apiHost().appending(path: "/repos/\(owner)/\(name)/traffic/views")
+            let clonesURL = self.apiHost().appending(path: "/repos/\(owner)/\(name)/traffic/clones")
             async let viewsPair = self.authorizedGet(url: viewsURL, token: token)
             async let clonesPair = self.authorizedGet(url: clonesURL, token: token)
             let views = try await GitHubDecoding.decode(TrafficResponse.self, from: viewsPair.0)
@@ -206,7 +206,7 @@ struct GitHubRestAPI {
     }
 
     func recentPullRequests(owner: String, name: String, limit: Int = 20) async throws -> [RepoPullRequestSummary] {
-        try await recentList(
+        try await self.recentList(
             owner: owner,
             name: name,
             path: "pulls",
@@ -221,7 +221,7 @@ struct GitHubRestAPI {
     }
 
     func recentIssues(owner: String, name: String, limit: Int = 20) async throws -> [RepoIssueSummary] {
-        try await recentList(
+        try await self.recentList(
             owner: owner,
             name: name,
             path: "issues",
@@ -236,7 +236,7 @@ struct GitHubRestAPI {
     }
 
     func recentReleases(owner: String, name: String, limit: Int = 20) async throws -> [RepoReleaseSummary] {
-        try await recentList(
+        try await self.recentList(
             owner: owner,
             name: name,
             path: "releases",
@@ -246,7 +246,7 @@ struct GitHubRestAPI {
     }
 
     func recentWorkflowRuns(owner: String, name: String, limit: Int = 20) async throws -> [RepoWorkflowRunSummary] {
-        try await recentList(
+        try await self.recentList(
             owner: owner,
             name: name,
             path: "actions/runs",
@@ -270,7 +270,7 @@ struct GitHubRestAPI {
     }
 
     func recentDiscussions(owner: String, name: String, limit: Int = 20) async throws -> [RepoDiscussionSummary] {
-        try await recentList(
+        try await self.recentList(
             owner: owner,
             name: name,
             path: "discussions",
@@ -284,7 +284,7 @@ struct GitHubRestAPI {
     }
 
     func recentTags(owner: String, name: String, limit: Int = 20) async throws -> [RepoTagSummary] {
-        try await recentList(
+        try await self.recentList(
             owner: owner,
             name: name,
             path: "tags",
@@ -294,7 +294,7 @@ struct GitHubRestAPI {
     }
 
     func recentBranches(owner: String, name: String, limit: Int = 20) async throws -> [RepoBranchSummary] {
-        try await recentList(
+        try await self.recentList(
             owner: owner,
             name: name,
             path: "branches",
@@ -304,7 +304,7 @@ struct GitHubRestAPI {
     }
 
     func topContributors(owner: String, name: String, limit: Int = 20) async throws -> [RepoContributorSummary] {
-        try await recentList(
+        try await self.recentList(
             owner: owner,
             name: name,
             path: "contributors",
@@ -391,7 +391,7 @@ struct GitHubRestAPI {
         token: String,
         allowedStatuses: Set<Int> = [200, 304]
     ) async throws -> (Data, HTTPURLResponse) {
-        try await requestRunner.get(url: url, token: token, allowedStatuses: allowedStatuses)
+        try await self.requestRunner.get(url: url, token: token, allowedStatuses: allowedStatuses)
     }
 }
 

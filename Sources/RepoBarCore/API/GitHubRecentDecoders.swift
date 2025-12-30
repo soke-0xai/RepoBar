@@ -81,7 +81,7 @@ enum GitHubRecentDecoders {
         let response = try GitHubDecoding.decode(ActionsRunsResponse.self, from: data)
         return response.workflowRuns.compactMap { run in
             guard let url = run.htmlUrl else { return nil }
-            let title = workflowRunTitle(run)
+            let title = self.workflowRunTitle(run)
             let updatedAt = run.updatedAt ?? run.createdAt ?? Date.distantPast
             return RepoWorkflowRunSummary(
                 name: title,

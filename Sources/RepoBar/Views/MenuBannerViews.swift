@@ -1,0 +1,114 @@
+import RepoBarCore
+import SwiftUI
+
+struct MenuLoggedOutView: View {
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "person.crop.circle.badge.exclam")
+                .font(.system(size: 28, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Text("Sign in to see your repositories")
+                .font(.headline)
+            Text("Connect your GitHub account to load pins and activity.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 140)
+    }
+}
+
+struct MenuEmptyStateView: View {
+    let title: String
+    let subtitle: String
+
+    init(
+        title: String = "No repositories yet",
+        subtitle: String = "Pin a repository to see activity here."
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "tray.fill")
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Text(self.title)
+                .font(.headline)
+            Text(self.subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 120)
+    }
+}
+
+struct RateLimitBanner: View {
+    let reset: Date
+    @Environment(\.menuItemHighlighted) private var isHighlighted
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "clock.fill")
+                .foregroundStyle(.orange)
+            Text("Rate limit resets \(RelativeFormatter.string(from: self.reset, relativeTo: Date()))")
+                .lineLimit(2)
+            Spacer()
+        }
+        .font(.caption)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Rate limit reset: \(RelativeFormatter.string(from: self.reset, relativeTo: Date()))")
+    }
+}
+
+struct ErrorBanner: View {
+    let message: String
+    @Environment(\.menuItemHighlighted) private var isHighlighted
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.red)
+            Text(self.message)
+                .lineLimit(2)
+            Spacer()
+        }
+        .font(.caption)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(MenuHighlightStyle.error(self.isHighlighted))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Error: \(self.message)")
+    }
+}
+
+struct MenuInfoTextRowView: View {
+    let text: String
+    let lineLimit: Int
+    private let iconColumnWidth: CGFloat = 18
+    private let iconSpacing: CGFloat = 8
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: self.iconSpacing) {
+            SubmenuIconPlaceholderView(font: .caption)
+
+            Text(self.text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(self.lineLimit)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, MenuStyle.cardHorizontalPadding)
+        .padding(.vertical, MenuStyle.cardVerticalPadding)
+    }
+}

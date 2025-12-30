@@ -210,8 +210,8 @@ public actor GitHubClient {
     public func currentUser() async throws -> UserIdentity {
         let user = try await self.restAPI.fetchCurrentUser()
         var components = URLComponents()
-        components.scheme = apiHost.scheme ?? "https"
-        let rawHost = apiHost.host ?? "github.com"
+        components.scheme = self.apiHost.scheme ?? "https"
+        let rawHost = self.apiHost.host ?? "github.com"
         components.host = rawHost == "api.github.com" ? "github.com" : rawHost
         let hostURL = components.url ?? URL(string: "https://github.com")!
         return UserIdentity(username: user.login, host: hostURL)

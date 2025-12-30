@@ -193,7 +193,7 @@ final class RecentListMenuCoordinator {
         menu.update()
     }
 
-    private func renderRecentItems(_ items: RecentMenuItems, for kind: RepoRecentMenuKind, repoFullName: String, menu: NSMenu) {
+    private func renderRecentItems(_ items: RecentMenuItems, for _: RepoRecentMenuKind, repoFullName: String, menu: NSMenu) {
         switch items {
         case let .issues(issueItems):
             let filtered = self.filteredIssues(issueItems)
@@ -329,5 +329,4 @@ final class RecentListMenuCoordinator {
 
         return filtered
     }
-
 }
