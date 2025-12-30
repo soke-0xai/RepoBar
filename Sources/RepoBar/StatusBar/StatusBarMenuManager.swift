@@ -602,10 +602,12 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         }.value
 
         menu.removeAllItems()
+        self.addLocalBranchMenuHeader(menu: menu, repoPath: repoPath)
         switch result {
         case let .success(branches):
             if branches.isEmpty {
                 menu.addItem(self.menuBuilder.infoItem("No branches"))
+                self.menuBuilder.refreshMenuViewHeights(in: menu)
                 menu.update()
                 return
             }
@@ -620,10 +622,12 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 item.state = branch.isCurrent ? .on : .off
                 menu.addItem(item)
             }
+            self.menuBuilder.refreshMenuViewHeights(in: menu)
             menu.update()
         case let .failure(error):
             menu.addItem(self.menuBuilder.infoItem("Failed to load branches"))
             self.presentAlert(title: "Branch list failed", message: error.userFacingMessage)
+            self.menuBuilder.refreshMenuViewHeights(in: menu)
             menu.update()
         }
     }
@@ -636,10 +640,12 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         }.value
 
         menu.removeAllItems()
+        self.addLocalWorktreeMenuHeader(menu: menu, repoPath: repoPath)
         switch result {
         case let .success(worktrees):
             if worktrees.isEmpty {
                 menu.addItem(self.menuBuilder.infoItem("No worktrees"))
+                self.menuBuilder.refreshMenuViewHeights(in: menu)
                 menu.update()
                 return
             }
@@ -654,10 +660,12 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                     fullName: fullName
                 ))
             }
+            self.menuBuilder.refreshMenuViewHeights(in: menu)
             menu.update()
         case let .failure(error):
             menu.addItem(self.menuBuilder.infoItem("Failed to load worktrees"))
             self.presentAlert(title: "Worktree list failed", message: error.userFacingMessage)
+            self.menuBuilder.refreshMenuViewHeights(in: menu)
             menu.update()
         }
     }
@@ -679,6 +687,26 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         item.action = #selector(self.switchLocalWorktree(_:))
         item.representedObject = LocalWorktreeAction(path: path, fullName: fullName)
         return item
+    }
+
+    private func addLocalBranchMenuHeader(menu: NSMenu, repoPath: URL) {
+        menu.addItem(self.menuBuilder.actionItem(
+            title: "Create Branch…",
+            action: #selector(self.createLocalBranch),
+            represented: repoPath,
+            systemImage: "plus"
+        ))
+        menu.addItem(.separator())
+    }
+
+    private func addLocalWorktreeMenuHeader(menu: NSMenu, repoPath: URL) {
+        menu.addItem(self.menuBuilder.actionItem(
+            title: "Create Worktree…",
+            action: #selector(self.createLocalWorktree),
+            represented: repoPath,
+            systemImage: "plus"
+        ))
+        menu.addItem(.separator())
     }
 
     private func runLocalGitTask(

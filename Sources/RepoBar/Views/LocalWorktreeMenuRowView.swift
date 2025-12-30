@@ -29,6 +29,7 @@ struct LocalWorktreeMenuRowView: View {
                 .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
                 .lineLimit(1)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
     }
