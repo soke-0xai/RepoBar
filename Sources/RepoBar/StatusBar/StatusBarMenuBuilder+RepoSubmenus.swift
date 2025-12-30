@@ -27,11 +27,22 @@ extension StatusBarMenuBuilder {
                 status: local,
                 onSync: { [weak target] in target?.syncLocalRepo(local) },
                 onRebase: { [weak target] in target?.rebaseLocalRepo(local) },
-                onReset: { [weak target] in target?.resetLocalRepo(local) },
-                onOpenFinder: { [weak target] in target?.openLocalFinder(local.path) },
-                onOpenTerminal: { [weak target] in target?.openLocalTerminal(local.path) }
+                onReset: { [weak target] in target?.resetLocalRepo(local) }
             )
             menu.addItem(self.viewItem(for: stateView, enabled: true))
+            menu.addItem(self.actionItem(
+                title: "Open in Finder",
+                action: #selector(self.target.openLocalFinder),
+                represented: local.path,
+                systemImage: "folder"
+            ))
+            menu.addItem(self.actionItem(
+                title: "Open in Terminal",
+                action: #selector(self.target.openLocalTerminal),
+                represented: local.path,
+                systemImage: "terminal"
+            ))
+            menu.addItem(.separator())
             menu.addItem(self.localBranchesSubmenuItem(for: local, fullName: repo.title))
             menu.addItem(self.localWorktreesSubmenuItem(for: local, fullName: repo.title))
             menu.addItem(.separator())

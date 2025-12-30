@@ -7,8 +7,6 @@ struct LocalRepoStateMenuView: View {
     let onSync: () -> Void
     let onRebase: () -> Void
     let onReset: () -> Void
-    let onOpenFinder: () -> Void
-    let onOpenTerminal: () -> Void
 
     @Environment(\.menuItemHighlighted) private var isHighlighted
 
@@ -40,19 +38,6 @@ struct LocalRepoStateMenuView: View {
                     enabled: self.resetEnabled,
                     isDestructive: true,
                     action: self.onReset
-                )
-            }
-            Divider()
-            VStack(spacing: 4) {
-                self.menuEntryButton(
-                    title: "Open in Finder",
-                    systemImage: "folder",
-                    action: self.onOpenFinder
-                )
-                self.menuEntryButton(
-                    title: "Open in Terminal",
-                    systemImage: "terminal",
-                    action: self.onOpenTerminal
                 )
             }
         }
@@ -164,15 +149,6 @@ struct LocalRepoStateMenuView: View {
         )
     }
 
-    private func menuEntryButton(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
-        LocalRepoMenuEntryButton(
-            title: title,
-            systemImage: systemImage,
-            isHighlighted: self.isHighlighted,
-            action: action
-        )
-    }
-
     private func localSyncColor(for state: LocalSyncState) -> Color {
         if self.isHighlighted { return MenuHighlightStyle.selectionText }
         let isLightAppearance = NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua
@@ -236,45 +212,5 @@ private struct LocalRepoActionButton: View {
         return self.isDestructive
             ? Color(nsColor: .systemRed).opacity(0.12)
             : Color(nsColor: .controlAccentColor).opacity(0.12)
-    }
-}
-
-private struct LocalRepoMenuEntryButton: View {
-    let title: String
-    let systemImage: String
-    let isHighlighted: Bool
-    let action: () -> Void
-
-    @State private var isHovered = false
-
-    var body: some View {
-        Button(action: self.action) {
-            HStack(alignment: .firstTextBaseline, spacing: MenuStyle.submenuIconSpacing) {
-                Image(systemName: self.systemImage)
-                    .font(.caption)
-                    .frame(width: MenuStyle.submenuIconColumnWidth, alignment: .center)
-                    .alignmentGuide(.firstTextBaseline) { dimensions in
-                        dimensions[VerticalAlignment.center] + MenuStyle.submenuIconBaselineOffset
-                    }
-                Text(self.title)
-                    .font(.system(size: 14))
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 4)
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(MenuHighlightStyle.primary(self.isHighlighted))
-        .background(self.hoverBackground, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .onHover { self.isHovered = $0 }
-    }
-
-    private var hoverBackground: Color {
-        guard self.isHovered else { return .clear }
-        if self.isHighlighted {
-            return MenuHighlightStyle.selectionText.opacity(0.18)
-        }
-        return Color(nsColor: .controlAccentColor).opacity(0.12)
     }
 }
