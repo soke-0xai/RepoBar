@@ -6,7 +6,6 @@ import SwiftUI
 struct RepoMenuCardView: View {
     let repo: RepositoryDisplayModel
     let isPinned: Bool
-    let showsSeparator: Bool
     let showHeatmap: Bool
     let heatmapRange: HeatmapRange
     let accentTone: AccentTone
@@ -14,26 +13,17 @@ struct RepoMenuCardView: View {
     @Environment(\.menuItemHighlighted) private var isHighlighted
 
     var body: some View {
-        VStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: self.verticalSpacing) {
-                self.header
-                self.stats
-                self.localStatusRow
-                self.activity
-                self.errorOrLimit
-                self.heatmap
-            }
-            .padding(.horizontal, MenuStyle.cardHorizontalPadding)
-            .padding(.vertical, MenuStyle.cardVerticalPadding)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            if self.showsSeparator {
-                Rectangle()
-                    .fill(self.separatorColor)
-                    .frame(height: 1)
-                    .padding(.leading, MenuStyle.cardSeparatorInset)
-                    .padding(.vertical, MenuStyle.cardSeparatorVerticalPadding)
-            }
+        VStack(alignment: .leading, spacing: self.verticalSpacing) {
+            self.header
+            self.stats
+            self.localStatusRow
+            self.activity
+            self.errorOrLimit
+            self.heatmap
         }
+        .padding(.horizontal, MenuStyle.cardHorizontalPadding)
+        .padding(.vertical, MenuStyle.cardVerticalPadding)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture {
             self.onOpen?()
@@ -163,13 +153,6 @@ struct RepoMenuCardView: View {
 
     private var verticalSpacing: CGFloat { MenuStyle.cardSpacing }
 
-    private var separatorColor: Color {
-        if self.isHighlighted {
-            return MenuHighlightStyle.selectionText.opacity(0.25)
-        }
-        return Color(nsColor: .separatorColor)
-    }
-
     private var isLightAppearance: Bool {
         NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua
     }
@@ -196,6 +179,16 @@ struct RepoMenuCardView: View {
         case .unknown:
             return MenuHighlightStyle.secondary(self.isHighlighted)
         }
+    }
+}
+
+struct RepoCardSeparatorRowView: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color(nsColor: .separatorColor))
+            .frame(height: 1)
+            .padding(.leading, MenuStyle.cardSeparatorInset)
+            .padding(.vertical, MenuStyle.cardSeparatorVerticalPadding)
     }
 }
 

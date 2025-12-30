@@ -70,6 +70,7 @@
 - Menu item height measurement now rounds to full pixels to keep separators visible.
 - Menu item height measurement now adds a 1pt buffer to avoid missing separators.
 - Menu rows now remeasure on menu resize, and highlighted separators stay visible.
+- Repo menu separators now render as their own rows to avoid height clipping.
 - Heatmaps now pixel-align to avoid uneven left/right padding in the menu.
 - Heatmaps now fill the full menu row width (reclaim submenu chevron padding).
 - Local projects branch detection now uses the first available git binary on PATH/Homebrew to avoid “unknown.”

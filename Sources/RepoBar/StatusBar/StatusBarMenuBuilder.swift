@@ -112,7 +112,6 @@ final class StatusBarMenuBuilder {
                 let card = RepoMenuCardView(
                     repo: repo,
                     isPinned: isPinned,
-                    showsSeparator: index < repos.count - 1,
                     showHeatmap: settings.heatmap.display == .inline,
                     heatmapRange: session.heatmapRange,
                     accentTone: settings.appearance.accentTone,
@@ -124,6 +123,9 @@ final class StatusBarMenuBuilder {
                 let item = self.viewItem(for: card, enabled: true, highlightable: true, submenu: submenu)
                 item.representedObject = repo.title
                 menu.addItem(item)
+                if index < repos.count - 1 {
+                    menu.addItem(self.repoCardSeparator())
+                }
             }
         }
 
@@ -332,6 +334,12 @@ final class StatusBarMenuBuilder {
 
     private func menuWidth(for menu: NSMenu) -> CGFloat {
         if let view = menu.items.compactMap(\.view).first,
+           let contentWidth = view.window?.contentView?.bounds.width,
+           contentWidth > 0
+        {
+            return max(contentWidth, Self.menuFixedWidth)
+        }
+        if let view = menu.items.compactMap(\.view).first,
            let windowWidth = view.window?.frame.width,
            windowWidth > 0
         {
@@ -365,6 +373,10 @@ final class StatusBarMenuBuilder {
 
     private func paddedSeparator() -> NSMenuItem {
         self.viewItem(for: MenuPaddedSeparatorView(), enabled: false)
+    }
+
+    private func repoCardSeparator() -> NSMenuItem {
+        self.viewItem(for: RepoCardSeparatorRowView(), enabled: false)
     }
 
     private func repoActivityItem(for event: ActivityEvent) -> NSMenuItem {

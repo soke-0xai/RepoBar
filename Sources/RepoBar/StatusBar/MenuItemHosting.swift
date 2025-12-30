@@ -18,6 +18,25 @@ final class MenuItemHighlightState {
     var isHighlighted = false
 }
 
+private enum MenuItemSelectionBackgroundMetrics {
+    static let horizontalInset: CGFloat = 6
+    static let verticalInset: CGFloat = 2
+    static let cornerRadius: CGFloat = 6
+}
+
+private struct MenuItemSelectionBackground: Shape {
+    func path(in rect: CGRect) -> Path {
+        let inset = rect.insetBy(
+            dx: MenuItemSelectionBackgroundMetrics.horizontalInset,
+            dy: MenuItemSelectionBackgroundMetrics.verticalInset
+        )
+        return RoundedRectangle(
+            cornerRadius: MenuItemSelectionBackgroundMetrics.cornerRadius,
+            style: .continuous
+        ).path(in: inset)
+    }
+}
+
 struct MenuItemContainerView<Content: View>: View {
     @Bindable var highlightState: MenuItemHighlightState
     let showsSubmenuIndicator: Bool
@@ -41,10 +60,8 @@ struct MenuItemContainerView<Content: View>: View {
             .foregroundStyle(MenuHighlightStyle.primary(self.highlightState.isHighlighted))
             .background(alignment: .topLeading) {
                 if self.highlightState.isHighlighted {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    MenuItemSelectionBackground()
                         .fill(MenuHighlightStyle.selectionBackground(true))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
                 }
             }
             .overlay(alignment: .topTrailing) {
@@ -107,7 +124,15 @@ final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuring, Menu
         }
         self.needsLayout = true
         self.layoutSubtreeIfNeeded()
+        let oldHeight = self.frame.height
+        self.frame.size.height = 10_000
+        self.needsLayout = true
+        self.layoutSubtreeIfNeeded()
         let size = self.fittingSize
-        return ceil(size.height) + 1
+        self.frame.size.height = oldHeight
+
+        let scale = self.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
+        let rounded = ceil(size.height * scale) / scale
+        return rounded + (1 / scale)
     }
 }
