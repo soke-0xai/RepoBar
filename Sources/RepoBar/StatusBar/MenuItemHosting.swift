@@ -54,6 +54,7 @@ struct MenuItemContainerView<Content: View>: View {
 
     var body: some View {
         self.content
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.trailing, self.showsSubmenuIndicator ? MenuStyle.menuItemContainerTrailingPadding : 0)
             .frame(maxWidth: .infinity, alignment: .leading)
             .environment(\.menuItemHighlighted, self.highlightState.isHighlighted)

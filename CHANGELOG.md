@@ -75,6 +75,7 @@
 - Open in Finder/Terminal now uses security-scoped bookmarks for local project paths.
 - Heatmap raster view now re-renders on size/backing changes to avoid first-open sizing glitches.
 - Contribution header hides on failures instead of showing an error message.
+- Menu item rows now honor intrinsic height for multi-line activity text.
 - Heatmaps now pixel-align to avoid uneven left/right padding in the menu.
 - Heatmaps now fill the full menu row width (reclaim submenu chevron padding).
 - Local projects branch detection now uses the first available git binary on PATH/Homebrew to avoid “unknown.”
