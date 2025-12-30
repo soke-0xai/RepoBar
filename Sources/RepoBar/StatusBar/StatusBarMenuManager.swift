@@ -14,6 +14,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private var recentListMenus: [ObjectIdentifier: RecentListMenuEntry] = [:]
     private weak var menuResizeWindow: NSWindow?
     private var lastMainMenuWidth: CGFloat?
+    private var lastMainMenuSignature: MenuBuildSignature?
     private var webURLBuilder: RepoWebURLBuilder { RepoWebURLBuilder(host: self.appState.session.settings.githubHost) }
 
     private let recentListLimit = 20
@@ -263,6 +264,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             return
         }
         if menu === self.mainMenu {
+            let plan = self.menuBuilder.mainMenuPlan()
             self.recentListMenus.removeAll(keepingCapacity: true)
             if self.appState.session.settings.appearance.showContributionHeader {
                 if case let .loggedIn(user) = self.appState.session.account {
@@ -270,7 +272,10 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 }
             }
             self.appState.refreshIfNeededForMenu()
-            self.menuBuilder.populateMainMenu(menu)
+            if self.lastMainMenuSignature != plan.signature || menu.items.isEmpty {
+                self.menuBuilder.populateMainMenu(menu, repos: plan.repos)
+                self.lastMainMenuSignature = plan.signature
+            }
             if let cachedWidth = self.lastMainMenuWidth {
                 self.menuBuilder.refreshMenuViewHeights(in: menu, width: cachedWidth)
             } else {
