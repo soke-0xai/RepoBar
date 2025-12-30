@@ -90,7 +90,9 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         guard let menu = self.mainMenu else { return }
         self.recentListMenus.removeAll(keepingCapacity: true)
         self.appState.persistSettings()
-        self.menuBuilder.populateMainMenu(menu)
+        let plan = self.menuBuilder.mainMenuPlan()
+        self.menuBuilder.populateMainMenu(menu, repos: plan.repos)
+        self.lastMainMenuSignature = plan.signature
         self.menuBuilder.refreshMenuViewHeights(in: menu)
         menu.update()
     }

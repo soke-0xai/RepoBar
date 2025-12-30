@@ -259,7 +259,7 @@ final class StatusBarMenuBuilder {
         return "\(user.username)@\(host)"
     }
 
-    private var isLightAppearance: Bool {
+    var isLightAppearance: Bool {
         NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua
     }
 }

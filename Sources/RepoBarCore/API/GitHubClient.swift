@@ -368,7 +368,6 @@ public actor GitHubClient {
     ) -> Repository {
         var accumulator = RepoErrorAccumulator()
         let owner = item.owner.login
-        let name = item.name
         let openPulls = self.value(from: openPullsResult, into: &accumulator) ?? 0
         let issues = max(item.openIssuesCount - openPulls, 0)
         let snapshot = self.value(from: activityResult, into: &accumulator)

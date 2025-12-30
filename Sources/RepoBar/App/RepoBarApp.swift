@@ -114,7 +114,7 @@ final class AppState {
             guard let self else { return }
             while !Task.isCancelled {
                 if self.auth.loadTokens() != nil {
-                    try? await self.auth.refreshIfNeeded()
+                    _ = try? await self.auth.refreshIfNeeded()
                 }
                 try? await Task.sleep(for: .seconds(self.tokenRefreshInterval))
             }
