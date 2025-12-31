@@ -26,6 +26,7 @@ struct StatusItemLabelView: View {
             SettingsOpener.shared.configure {
                 self.openSettings()
             }
+            self.presentLoginSettingsIfNeeded()
         }
     }
 
@@ -43,6 +44,12 @@ struct StatusItemLabelView: View {
         case .red: "xmark.circle.fill"
         case .loggedOut: "slash.circle"
         }
+    }
+
+    private func presentLoginSettingsIfNeeded() {
+        guard case .loggedOut = self.session.account else { return }
+        self.session.settingsSelectedTab = .accounts
+        SettingsOpener.shared.open()
     }
 }
 
