@@ -43,7 +43,9 @@ struct RepoDetailCacheStoreTests {
             heatmap: [HeatmapCell(date: now, count: 3)],
             heatmapFetchedAt: now,
             latestRelease: Release(name: "v1.0.0", tag: "v1.0.0", publishedAt: now, url: URL(string: "https://example.com/release")!),
-            releaseFetchedAt: now
+            releaseFetchedAt: now,
+            discussionsEnabled: true,
+            discussionsCheckedAt: now
         )
 
         store.save(cache, apiHost: apiHost, owner: "steipete", name: "RepoBar")
@@ -57,6 +59,7 @@ struct RepoDetailCacheStoreTests {
         #expect(result.traffic?.uniqueVisitors == 9)
         #expect(result.heatmap?.count == 1)
         #expect(result.latestRelease?.tag == "v1.0.0")
+        #expect(result.discussionsEnabled == true)
     }
 
     @Test

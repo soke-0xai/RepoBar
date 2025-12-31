@@ -51,7 +51,7 @@ struct ChangelogMenuView: View {
 private struct MarkdownPreviewView: NSViewRepresentable {
     let markdown: String
     let isHighlighted: Bool
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator()
     }

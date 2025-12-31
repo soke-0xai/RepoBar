@@ -16,6 +16,12 @@ struct DebugSettingsView: View {
                         await self.loadDiagnosticsIfEnabled()
                     }
                 }
+                Button("Clear repo detail cache") {
+                    Task {
+                        await self.appState.github.clearRepoDetailCache()
+                        await self.loadDiagnosticsIfEnabled()
+                    }
+                }
                 Button("Clear contribution heatmap cache") {
                     self.appState.clearContributionCache()
                 }

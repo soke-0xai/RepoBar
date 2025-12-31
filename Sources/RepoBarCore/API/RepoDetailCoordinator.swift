@@ -4,6 +4,7 @@ actor RepoDetailCoordinator {
     private var store: RepoDetailStore
     private let policy: RepoDetailCachePolicy
     private let restAPI: GitHubRestAPI
+    private let logger = RepoBarLogging.logger("repo-capability")
 
     init(
         restAPI: GitHubRestAPI,
@@ -36,6 +37,17 @@ actor RepoDetailCoordinator {
         let resolvedName = details.name
         let apiHost = await self.restAPI.apiHost()
         var cache = self.store.load(apiHost: apiHost, owner: resolvedOwner, name: resolvedName)
+        var didUpdateCache = false
+        if let discussionsEnabled = details.hasDiscussions {
+            if cache.discussionsEnabled != discussionsEnabled {
+                self.logger.info(
+                    "Discussions capability \(discussionsEnabled ? "enabled" : "disabled") for \(resolvedOwner)/\(resolvedName) source=repoDetails"
+                )
+            }
+            cache.discussionsEnabled = discussionsEnabled
+            cache.discussionsCheckedAt = now
+            didUpdateCache = true
+        }
         let cacheState = self.policy.state(for: cache, now: now)
         let cachedOpenPulls = cache.openPulls ?? 0
         let cachedCiDetails = cache.ciDetails ?? CIStatusDetails(status: .unknown, runCount: nil)
@@ -51,7 +63,6 @@ actor RepoDetailCoordinator {
         let shouldFetchTraffic = cacheState.traffic.needsRefresh
         let shouldFetchHeatmap = cacheState.heatmap.needsRefresh
         let shouldFetchRelease = cacheState.release.needsRefresh
-        var didUpdateCache = false
 
         // Run all expensive lookups in parallel; individual failures are folded into the accumulator.
         let restAPI = self.restAPI
@@ -183,12 +194,76 @@ actor RepoDetailCoordinator {
             heatmap: heatmap,
             error: accumulator.message,
             rateLimitedUntil: accumulator.rateLimit,
-            detailCacheState: finalCacheState
+            detailCacheState: finalCacheState,
+            discussionsEnabled: cache.discussionsEnabled
         )
     }
 
     func clearCache() {
+        self.logger.info("Clearing repo detail cache (disk + memory)")
         self.store.clear()
+    }
+
+    func cachedDiscussionsEnabled(
+        owner: String,
+        name: String,
+        now: Date = Date(),
+        ttl: TimeInterval = RepoDetailCacheConstants.discussionsCapabilityTTL
+    ) async -> Bool? {
+        let apiHost = await self.restAPI.apiHost()
+        return self.store.discussionsEnabled(
+            apiHost: apiHost,
+            owner: owner,
+            name: name,
+            now: now,
+            ttl: ttl
+        )
+    }
+
+    func updateDiscussionsCapability(
+        owner: String,
+        name: String,
+        enabled: Bool,
+        checkedAt: Date = Date(),
+        source: String
+    ) async {
+        let apiHost = await self.restAPI.apiHost()
+        let updated = self.store.updateDiscussionsEnabled(
+            apiHost: apiHost,
+            owner: owner,
+            name: name,
+            enabled: enabled,
+            checkedAt: checkedAt
+        )
+        if updated {
+            self.logger.info(
+                "Discussions capability \(enabled ? "enabled" : "disabled") for \(owner)/\(name) source=\(source)"
+            )
+        }
+    }
+
+    func updateDiscussionsCapability(
+        from items: [RepoItem],
+        checkedAt: Date = Date(),
+        source: String
+    ) async {
+        let apiHost = await self.restAPI.apiHost()
+        var updatedCount = 0
+        for item in items {
+            guard let enabled = item.hasDiscussions else { continue }
+            if self.store.updateDiscussionsEnabled(
+                apiHost: apiHost,
+                owner: item.owner.login,
+                name: item.name,
+                enabled: enabled,
+                checkedAt: checkedAt
+            ) {
+                updatedCount += 1
+            }
+        }
+        if updatedCount > 0 {
+            self.logger.info("Updated discussions capability for \(updatedCount) repos source=\(source)")
+        }
     }
 
     private static func capture<T>(_ work: @escaping @Sendable () async throws -> T) async -> Result<T, Error> {

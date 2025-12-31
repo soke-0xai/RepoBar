@@ -165,6 +165,9 @@ struct RepoSubmenuBuilder {
                 badgeText: runBadge
             ))]
         case .discussions:
+            if repo.source.discussionsEnabled == false {
+                return []
+            }
             let cachedDiscussionCount = self.target.cachedRecentListCount(fullName: repo.title, kind: .discussions)
             return [self.recentListSubmenuItem(RecentListConfig(
                 title: "Discussions",

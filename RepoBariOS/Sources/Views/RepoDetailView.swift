@@ -205,32 +205,34 @@ struct RepoDetailView: View {
             }
 
             Section("Community") {
-                NavigationLink {
-                    RepoDetailListView(
-                        title: "Discussions",
-                        items: model.discussions,
-                        id: \.url,
-                        emptyText: "No discussions"
-                    ) { discussion in
-                        LinkRow(
-                            title: discussion.title,
-                            subtitle: discussion.authorLogin,
-                            date: discussion.updatedAt,
-                            url: discussion.url,
-                            avatarURL: discussion.authorAvatarURL,
-                            placeholderSymbol: "person.fill"
+                if repository.discussionsEnabled != false {
+                    NavigationLink {
+                        RepoDetailListView(
+                            title: "Discussions",
+                            items: model.discussions,
+                            id: \.url,
+                            emptyText: "No discussions"
+                        ) { discussion in
+                            LinkRow(
+                                title: discussion.title,
+                                subtitle: discussion.authorLogin,
+                                date: discussion.updatedAt,
+                                url: discussion.url,
+                                avatarURL: discussion.authorAvatarURL,
+                                placeholderSymbol: "person.fill"
+                            )
+                        }
+                    } label: {
+                        RepoDetailSectionRow(
+                            title: "Discussions",
+                            subtitle: subtitleText(
+                                primary: model.discussions.first?.title,
+                                fallback: "No discussions"
+                            ),
+                            count: model.discussions.count,
+                            symbolName: "bubble.left.and.bubble.right"
                         )
                     }
-                } label: {
-                    RepoDetailSectionRow(
-                        title: "Discussions",
-                        subtitle: subtitleText(
-                            primary: model.discussions.first?.title,
-                            fallback: "No discussions"
-                        ),
-                        count: model.discussions.count,
-                        symbolName: "bubble.left.and.bubble.right"
-                    )
                 }
 
                 NavigationLink {

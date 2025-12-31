@@ -68,11 +68,19 @@ public actor GitHubClient {
 
     public func defaultRepositories(limit: Int, for _: String) async throws -> [Repository] {
         let repos = try await self.restAPI.userReposSorted(limit: max(limit, 10))
+        await self.repoDetailCoordinator.updateDiscussionsCapability(
+            from: repos,
+            source: "defaultRepositories"
+        )
         return try await self.expandRepoItems(Array(repos.prefix(limit)))
     }
 
     public func activityRepositories(limit: Int?) async throws -> [Repository] {
         let items = try await self.restAPI.userReposPaginated(limit: limit)
+        await self.repoDetailCoordinator.updateDiscussionsCapability(
+            from: items,
+            source: "activityRepositories"
+        )
         let activityResults = await self.fetchActivityResults(for: items)
         return items.map { item in
             let fullName = "\(item.owner.login)/\(item.name)"
@@ -216,6 +224,10 @@ public actor GitHubClient {
 
     public func searchRepositories(matching query: String) async throws -> [Repository] {
         let items = try await self.restAPI.searchRepositories(matching: query)
+        await self.repoDetailCoordinator.updateDiscussionsCapability(
+            from: items,
+            source: "searchRepositories"
+        )
         return items.map { Repository.from(item: $0) }
     }
 
@@ -223,6 +235,11 @@ public actor GitHubClient {
         await self.requestRunner.clear()
         self.prefetchedRepos = []
         self.prefetchedReposExpiry = nil
+        await self.clearRepoDetailCache()
+    }
+
+    public func clearRepoDetailCache() async {
+        await self.diag.message("Clearing repo detail cache (disk + memory)")
         await self.repoDetailCoordinator.clearCache()
     }
 
@@ -242,6 +259,10 @@ public actor GitHubClient {
     /// Recent repositories for the authenticated user, sorted by activity.
     public func recentRepositories(limit: Int = 8) async throws -> [Repository] {
         let items = try await self.restAPI.userReposSorted(limit: limit)
+        await self.repoDetailCoordinator.updateDiscussionsCapability(
+            from: items,
+            source: "recentRepositories"
+        )
         return items.map { Repository.from(item: $0) }
     }
 
@@ -260,6 +281,10 @@ public actor GitHubClient {
         }
 
         let items = try await self.restAPI.userReposPaginated(limit: max)
+        await self.repoDetailCoordinator.updateDiscussionsCapability(
+            from: items,
+            source: "prefetchedRepositories"
+        )
         let repos = items.map { Repository.from(item: $0) }
         self.prefetchedRepos = repos
         self.prefetchedReposExpiry = now.addingTimeInterval(RepoCacheConstants.cacheTTL)
@@ -287,7 +312,41 @@ public actor GitHubClient {
     }
 
     public func recentDiscussions(owner: String, name: String, limit: Int = 20) async throws -> [RepoDiscussionSummary] {
-        try await self.restAPI.recentDiscussions(owner: owner, name: name, limit: limit)
+        let now = Date()
+        let cachedEnabled = await self.repoDetailCoordinator.cachedDiscussionsEnabled(
+            owner: owner,
+            name: name,
+            now: now
+        )
+        if cachedEnabled == false {
+            await self.diag.message("Discussions disabled (cached) for \(owner)/\(name)")
+            return []
+        }
+
+        do {
+            let discussions = try await self.restAPI.recentDiscussions(owner: owner, name: name, limit: limit)
+            await self.repoDetailCoordinator.updateDiscussionsCapability(
+                owner: owner,
+                name: name,
+                enabled: true,
+                checkedAt: now,
+                source: "recentDiscussions"
+            )
+            return discussions
+        } catch let error as GitHubAPIError {
+            if case let .badStatus(code, _) = error, code == 404 || code == 410 {
+                await self.repoDetailCoordinator.updateDiscussionsCapability(
+                    owner: owner,
+                    name: name,
+                    enabled: false,
+                    checkedAt: now,
+                    source: "recentDiscussions"
+                )
+                await self.diag.message("Discussions disabled for \(owner)/\(name) (HTTP \(code))")
+                return []
+            }
+            throw error
+        }
     }
 
     public func recentTags(owner: String, name: String, limit: Int = 20) async throws -> [RepoTagSummary] {

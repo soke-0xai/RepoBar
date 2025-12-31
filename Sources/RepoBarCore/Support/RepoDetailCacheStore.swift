@@ -14,6 +14,8 @@ struct RepoDetailCache: Codable, Sendable {
     var heatmapFetchedAt: Date?
     var latestRelease: Release?
     var releaseFetchedAt: Date?
+    var discussionsEnabled: Bool?
+    var discussionsCheckedAt: Date?
 }
 
 struct RepoDetailCacheStore {

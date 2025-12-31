@@ -13,6 +13,7 @@
 - Fix auto-opening settings when tokens already exist.
 - iOS: clarify repo detail errors with access/refresh guidance and log error domains/codes.
 - iOS: suppress discussions error when the feature is disabled.
+- Repo discussions: cache capability (REST + fetch errors) and hide disabled entries across platforms; add debug cache reset.
 
 ## 0.1.1 - 2025-12-31
 
