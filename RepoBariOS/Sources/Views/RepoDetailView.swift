@@ -32,114 +32,230 @@ struct RepoDetailView: View {
                 }
             }
 
-            Section("Recent Activity") {
-                if repository.activityEvents.isEmpty {
-                    Text("No recent activity")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(repository.activityEvents.prefix(AppLimits.RepoActivity.limit), id: \.url) { event in
+            Section("Activity") {
+                NavigationLink {
+                    let events = Array(repository.activityEvents.prefix(AppLimits.RepoActivity.limit))
+                    RepoDetailListView(
+                        title: "Recent Activity",
+                        items: events,
+                        id: \.url,
+                        emptyText: "No recent activity"
+                    ) { event in
                         LinkRow(title: event.title, subtitle: event.actor, date: event.date, url: event.url)
                     }
+                } label: {
+                    RepoDetailSectionRow(
+                        title: "Recent Activity",
+                        subtitle: subtitleText(
+                            primary: repository.activityEvents.first?.title,
+                            fallback: "No recent activity"
+                        ),
+                        count: repository.activityEvents.count,
+                        symbolName: "bolt"
+                    )
+                }
+
+                NavigationLink {
+                    let commits = model.commits?.items ?? []
+                    RepoDetailListView(
+                        title: "Commits",
+                        items: commits,
+                        id: \.url,
+                        emptyText: "No recent commits"
+                    ) { commit in
+                        LinkRow(title: commit.message, subtitle: commit.authorLogin, date: commit.authoredAt, url: commit.url)
+                    }
+                } label: {
+                    RepoDetailSectionRow(
+                        title: "Commits",
+                        subtitle: subtitleText(
+                            primary: model.commits?.items.first?.message,
+                            fallback: "No recent commits"
+                        ),
+                        count: model.commits?.items.count,
+                        symbolName: "arrow.turn.down.right"
+                    )
                 }
             }
 
-            Section("Pull Requests") {
-                if model.pulls.isEmpty {
-                    Text("No open pull requests")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(model.pulls, id: \.url) { pr in
+            Section("Code") {
+                NavigationLink {
+                    RepoDetailListView(
+                        title: "Pull Requests",
+                        items: model.pulls,
+                        id: \.url,
+                        emptyText: "No open pull requests"
+                    ) { pr in
                         LinkRow(title: "#\(pr.number) \(pr.title)", subtitle: pr.authorLogin, date: pr.updatedAt, url: pr.url)
                     }
+                } label: {
+                    RepoDetailSectionRow(
+                        title: "Pull Requests",
+                        subtitle: subtitleText(
+                            primary: model.pulls.first?.title,
+                            fallback: "No open pull requests"
+                        ),
+                        count: model.pulls.count,
+                        symbolName: "arrow.triangle.branch"
+                    )
                 }
-            }
 
-            Section("Issues") {
-                if model.issues.isEmpty {
-                    Text("No open issues")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(model.issues, id: \.url) { issue in
+                NavigationLink {
+                    RepoDetailListView(
+                        title: "Issues",
+                        items: model.issues,
+                        id: \.url,
+                        emptyText: "No open issues"
+                    ) { issue in
                         LinkRow(title: "#\(issue.number) \(issue.title)", subtitle: issue.authorLogin, date: issue.updatedAt, url: issue.url)
                     }
+                } label: {
+                    RepoDetailSectionRow(
+                        title: "Issues",
+                        subtitle: subtitleText(
+                            primary: model.issues.first?.title,
+                            fallback: "No open issues"
+                        ),
+                        count: model.issues.count,
+                        symbolName: "exclamationmark.circle"
+                    )
                 }
             }
 
             Section("Releases") {
-                if model.releases.isEmpty {
-                    Text("No releases")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(model.releases, id: \.url) { release in
+                NavigationLink {
+                    RepoDetailListView(
+                        title: "Releases",
+                        items: model.releases,
+                        id: \.url,
+                        emptyText: "No releases"
+                    ) { release in
                         LinkRow(title: release.name, subtitle: release.tag, date: release.publishedAt, url: release.url)
                     }
+                } label: {
+                    RepoDetailSectionRow(
+                        title: "Releases",
+                        subtitle: subtitleText(
+                            primary: model.releases.first?.name,
+                            fallback: "No releases"
+                        ),
+                        count: model.releases.count,
+                        symbolName: "tag"
+                    )
                 }
-            }
 
-            Section("Workflow Runs") {
-                if model.workflows.isEmpty {
-                    Text("No workflow runs")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(model.workflows, id: \.url) { run in
+                NavigationLink {
+                    RepoDetailListView(
+                        title: "Workflow Runs",
+                        items: model.workflows,
+                        id: \.url,
+                        emptyText: "No workflow runs"
+                    ) { run in
                         LinkRow(title: run.name, subtitle: run.branch ?? "", date: run.updatedAt, url: run.url)
                     }
+                } label: {
+                    RepoDetailSectionRow(
+                        title: "Workflow Runs",
+                        subtitle: subtitleText(
+                            primary: model.workflows.first?.name,
+                            fallback: "No workflow runs"
+                        ),
+                        count: model.workflows.count,
+                        symbolName: "checkmark.seal"
+                    )
                 }
             }
 
-            Section("Commits") {
-                let commits = model.commits?.items ?? []
-                if commits.isEmpty {
-                    Text("No recent commits")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(commits, id: \.url) { commit in
-                        LinkRow(title: commit.message, subtitle: commit.authorLogin, date: commit.authoredAt, url: commit.url)
-                    }
-                }
-            }
-
-            Section("Discussions") {
-                if model.discussions.isEmpty {
-                    Text("No discussions")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(model.discussions, id: \.url) { discussion in
+            Section("Community") {
+                NavigationLink {
+                    RepoDetailListView(
+                        title: "Discussions",
+                        items: model.discussions,
+                        id: \.url,
+                        emptyText: "No discussions"
+                    ) { discussion in
                         LinkRow(title: discussion.title, subtitle: discussion.authorLogin, date: discussion.updatedAt, url: discussion.url)
                     }
+                } label: {
+                    RepoDetailSectionRow(
+                        title: "Discussions",
+                        subtitle: subtitleText(
+                            primary: model.discussions.first?.title,
+                            fallback: "No discussions"
+                        ),
+                        count: model.discussions.count,
+                        symbolName: "bubble.left.and.bubble.right"
+                    )
+                }
+
+                NavigationLink {
+                    RepoDetailListView(
+                        title: "Contributors",
+                        items: model.contributors,
+                        id: \.login,
+                        emptyText: "No contributors"
+                    ) { contributor in
+                        LinkRow(
+                            title: contributor.login,
+                            subtitle: "\(contributor.contributions) contributions",
+                            date: nil,
+                            url: contributor.url
+                        )
+                    }
+                } label: {
+                    RepoDetailSectionRow(
+                        title: "Contributors",
+                        subtitle: subtitleText(
+                            primary: model.contributors.first?.login,
+                            fallback: "No contributors"
+                        ),
+                        count: model.contributors.count,
+                        symbolName: "person.3"
+                    )
                 }
             }
 
-            Section("Tags") {
-                if model.tags.isEmpty {
-                    Text("No tags")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(model.tags, id: \.name) { tag in
+            Section("References") {
+                NavigationLink {
+                    RepoDetailListView(
+                        title: "Tags",
+                        items: model.tags,
+                        id: \.name,
+                        emptyText: "No tags"
+                    ) { tag in
                         LinkRow(title: tag.name, subtitle: tag.commitSHA, date: nil, url: tagURL(tag.name))
                     }
+                } label: {
+                    RepoDetailSectionRow(
+                        title: "Tags",
+                        subtitle: subtitleText(
+                            primary: model.tags.first?.name,
+                            fallback: "No tags"
+                        ),
+                        count: model.tags.count,
+                        symbolName: "tag.fill"
+                    )
                 }
-            }
 
-            Section("Branches") {
-                if model.branches.isEmpty {
-                    Text("No branches")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(model.branches, id: \.name) { branch in
+                NavigationLink {
+                    RepoDetailListView(
+                        title: "Branches",
+                        items: model.branches,
+                        id: \.name,
+                        emptyText: "No branches"
+                    ) { branch in
                         LinkRow(title: branch.name, subtitle: branch.commitSHA, date: nil, url: branchURL(branch.name))
                     }
-                }
-            }
-
-            Section("Contributors") {
-                if model.contributors.isEmpty {
-                    Text("No contributors")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(model.contributors, id: \.login) { contributor in
-                        LinkRow(title: contributor.login, subtitle: "\(contributor.contributions) contributions", date: nil, url: contributor.url)
-                    }
+                } label: {
+                    RepoDetailSectionRow(
+                        title: "Branches",
+                        subtitle: subtitleText(
+                            primary: model.branches.first?.name,
+                            fallback: "No branches"
+                        ),
+                        count: model.branches.count,
+                        symbolName: "point.topleft.down.curvedto.point.bottomright.up"
+                    )
                 }
             }
 
@@ -147,7 +263,12 @@ struct RepoDetailView: View {
                 NavigationLink {
                     RepoFilesView(appModel: appModel, repository: repository)
                 } label: {
-                    Label("Browse repository files", systemImage: "folder")
+                    RepoDetailSectionRow(
+                        title: "Browse files",
+                        subtitle: "Repository tree",
+                        count: nil,
+                        symbolName: "folder"
+                    )
                 }
             }
         }
@@ -164,6 +285,16 @@ struct RepoDetailView: View {
             }
         }
         .task { await model.load() }
+    }
+
+    private func subtitleText(primary: String?, fallback: String) -> String? {
+        if let primary, primary.isEmpty == false {
+            return primary
+        }
+        if model.isLoading {
+            return "Loading…"
+        }
+        return fallback
     }
 
     private var overview: some View {
@@ -257,6 +388,72 @@ private struct LinkRow: View {
                 }
             }
         }
+    }
+}
+
+private struct RepoDetailSectionRow: View {
+    let title: String
+    let subtitle: String?
+    let count: Int?
+    let symbolName: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbolName)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(.ultraThinMaterial))
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.35), lineWidth: 0.5)
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                if let subtitle, subtitle.isEmpty == false {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            if let count {
+                Text("\(count)")
+                    .font(.caption2)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct RepoDetailListView<Item, ID: Hashable, Row: View>: View {
+    let title: String
+    let items: [Item]
+    let id: KeyPath<Item, ID>
+    let emptyText: String
+    let row: (Item) -> Row
+
+    var body: some View {
+        List {
+            if items.isEmpty {
+                Text(emptyText)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(items, id: id) { item in
+                    row(item)
+                }
+            }
+        }
+        .scrollContentBackground(.hidden)
+        .background(GlassBackground())
+        .navigationTitle(title)
     }
 }
 
