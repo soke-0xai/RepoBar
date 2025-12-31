@@ -1,6 +1,6 @@
 import Foundation
 
-public enum MainMenuItemGroup: String, Hashable {
+public enum MainMenuItemGroup: String, Hashable, Sendable {
     case auth
     case header
     case status
@@ -9,7 +9,7 @@ public enum MainMenuItemGroup: String, Hashable {
     case footer
 }
 
-public enum MainMenuItemID: String, CaseIterable, Codable, Hashable {
+public enum MainMenuItemID: String, CaseIterable, Codable, Hashable, Sendable {
     case loggedOutPrompt
     case signInAction
     case contributionHeader
@@ -63,7 +63,7 @@ public enum MainMenuItemID: String, CaseIterable, Codable, Hashable {
     }
 }
 
-public enum RepoSubmenuItemGroup: String, Hashable {
+public enum RepoSubmenuItemGroup: String, Hashable, Sendable {
     case open
     case local
     case lists
@@ -73,7 +73,7 @@ public enum RepoSubmenuItemGroup: String, Hashable {
     case manage
 }
 
-public enum RepoSubmenuItemID: String, CaseIterable, Codable, Hashable {
+public enum RepoSubmenuItemID: String, CaseIterable, Codable, Hashable, Sendable {
     case openOnGitHub
     case openInFinder
     case openInTerminal
@@ -161,7 +161,7 @@ public enum RepoSubmenuItemID: String, CaseIterable, Codable, Hashable {
     }
 }
 
-public struct MenuCustomization: Equatable, Codable, Hashable {
+public struct MenuCustomization: Equatable, Codable, Hashable, Sendable {
     public var hiddenMainMenuItems: Set<MainMenuItemID> = []
     public var mainMenuOrder: [MainMenuItemID] = Self.defaultMainMenuOrder
     public var hiddenRepoSubmenuItems: Set<RepoSubmenuItemID> = []

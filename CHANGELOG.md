@@ -10,6 +10,7 @@
 - Fix CLI auth refresh: show actionable error when refresh response is missing tokens.
 - Add Settings installer to link `repobar` CLI into common Homebrew paths.
 - Add Display settings to reorder/hide main menu and repo submenu items (reset to defaults included).
+- Make Display reset action destructive and stabilize spacing for rows without subtitles.
 - Limit "More Activity/Commits" submenus to 20 entries.
 - Include organization and collaborator repositories in repo lists.
 - CLI: add `--owner`/`--mine` filters for repos list.

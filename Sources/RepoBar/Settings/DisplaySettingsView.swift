@@ -12,7 +12,10 @@ struct DisplaySettingsView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("Reset to Defaults") { self.resetToDefaults() }
+                Button(role: .destructive) { self.resetToDefaults() } label: {
+                    Text("Reset to Defaults")
+                }
+                .buttonStyle(.bordered)
             }
 
             HStack(alignment: .top, spacing: 16) {
@@ -48,7 +51,6 @@ struct DisplaySettingsView: View {
                 }
                 .onMove(perform: self.moveMainMenuItems)
             }
-            .environment(\.editMode, .constant(.active))
             .frame(minWidth: 230, maxWidth: .infinity, minHeight: 360)
         }
     }
@@ -68,7 +70,6 @@ struct DisplaySettingsView: View {
                 }
                 .onMove(perform: self.moveRepoSubmenuItems)
             }
-            .environment(\.editMode, .constant(.active))
             .frame(minWidth: 230, maxWidth: .infinity, minHeight: 360)
         }
     }
@@ -83,11 +84,9 @@ struct DisplaySettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .foregroundStyle(isVisible.wrappedValue ? .primary : .secondary)
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text(subtitle ?? " ")
+                    .font(.caption)
+                    .foregroundStyle(subtitle == nil ? .clear : .secondary)
             }
             Spacer()
             Toggle("Visible", isOn: isVisible)
