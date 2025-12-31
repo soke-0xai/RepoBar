@@ -1,6 +1,6 @@
 import Foundation
 import Logging
-import OSLog
+import os
 
 public enum LogVerbosity: String, CaseIterable, Codable, Equatable {
     case error
@@ -19,7 +19,7 @@ public enum LogVerbosity: String, CaseIterable, Codable, Equatable {
         }
     }
 
-    public var logLevel: Logger.Level {
+    public var logLevel: Logging.Logger.Level {
         switch self {
         case .error: .error
         case .warning: .warning
@@ -41,9 +41,9 @@ public enum RepoBarLogging {
         state.configure(verbosity: verbosity, fileLoggingEnabled: fileLoggingEnabled)
     }
 
-    public static func logger(_ label: String) -> Logger {
+    public static func logger(_ label: String) -> Logging.Logger {
         state.bootstrapIfNeeded()
-        return Logger(label: label)
+        return Logging.Logger(label: label)
     }
 
     public static func logFileURL() -> URL? {
@@ -51,10 +51,10 @@ public enum RepoBarLogging {
     }
 }
 
-private final class LogState {
+private final class LogState: @unchecked Sendable {
     private let lock = NSLock()
     private var isBootstrapped = false
-    private var logLevel: Logger.Level = .info
+    private var logLevel: Logging.Logger.Level = .info
     private var fileLoggingEnabled = false
     private var fileHandle: FileHandle?
     private(set) var logFileURL: URL?
@@ -86,21 +86,21 @@ private final class LogState {
         self.lock.unlock()
     }
 
-    func currentLogLevel() -> Logger.Level {
+    func currentLogLevel() -> Logging.Logger.Level {
         self.lock.lock()
         let level = self.logLevel
         self.lock.unlock()
         return level
     }
 
-    func updateLogLevel(_ level: Logger.Level) {
+    func updateLogLevel(_ level: Logging.Logger.Level) {
         self.lock.lock()
         self.logLevel = level
         self.lock.unlock()
     }
 
-    func osLogger(category: String) -> OSLog.Logger {
-        OSLog.Logger(subsystem: self.subsystem, category: category)
+    func osLogger(category: String) -> os.Logger {
+        os.Logger(subsystem: self.subsystem, category: category)
     }
 
     func logToFile(_ line: String) {
@@ -156,32 +156,32 @@ private final class LogState {
 
 private struct RepoBarLogHandler: LogHandler {
     let label: String
-    var metadata: Logger.Metadata = [:]
-    var logLevel: Logger.Level {
+    var metadata: Logging.Logger.Metadata = [:]
+    var logLevel: Logging.Logger.Level {
         get { self.state.currentLogLevel() }
         set { self.state.updateLogLevel(newValue) }
     }
-    var metadataProvider: Logger.MetadataProvider?
+    var metadataProvider: Logging.Logger.MetadataProvider?
 
     private let state: LogState
-    private let osLogger: OSLog.Logger
+    private let osLogger: os.Logger
 
-    init(label: String, state: LogState, metadataProvider: Logger.MetadataProvider? = nil) {
+    init(label: String, state: LogState, metadataProvider: Logging.Logger.MetadataProvider? = nil) {
         self.label = label
         self.state = state
         self.metadataProvider = metadataProvider
         self.osLogger = state.osLogger(category: label)
     }
 
-    subscript(metadataKey key: String) -> Logger.Metadata.Value? {
+    subscript(metadataKey key: String) -> Logging.Logger.Metadata.Value? {
         get { self.metadata[key] }
         set { self.metadata[key] = newValue }
     }
 
     func log(
-        level: Logger.Level,
-        message: Logger.Message,
-        metadata: Logger.Metadata?,
+        level: Logging.Logger.Level,
+        message: Logging.Logger.Message,
+        metadata: Logging.Logger.Metadata?,
         source: String,
         file: String,
         function: String,
@@ -194,9 +194,9 @@ private struct RepoBarLogHandler: LogHandler {
         self.state.logToFile(fileLine)
     }
 
-    private func mergedMetadata(extra: Logger.Metadata?) -> Logger.Metadata {
+    private func mergedMetadata(extra: Logging.Logger.Metadata?) -> Logging.Logger.Metadata {
         var merged = self.metadata
-        if let provided = self.metadataProvider?() {
+        if let provided = self.metadataProvider?.get() {
             merged.merge(provided, uniquingKeysWith: { _, new in new })
         }
         if let extra {
@@ -205,7 +205,7 @@ private struct RepoBarLogHandler: LogHandler {
         return merged
     }
 
-    private func renderMessage(_ message: Logger.Message, metadata: Logger.Metadata) -> String {
+    private func renderMessage(_ message: Logging.Logger.Message, metadata: Logging.Logger.Metadata) -> String {
         guard metadata.isEmpty == false else { return message.description }
         let metadataText = metadata
             .sorted(by: { $0.key < $1.key })
@@ -214,19 +214,19 @@ private struct RepoBarLogHandler: LogHandler {
         return "\(message.description) [\(metadataText)]"
     }
 
-    private func renderFileLine(level: Logger.Level, message: String) -> String {
+    private func renderFileLine(level: Logging.Logger.Level, message: String) -> String {
         let timestamp = self.state.formattedTimestamp()
         return "[\(timestamp)] [\(level.rawValue)] [\(self.label)] \(message)\n"
     }
 
-    private func stringify(_ value: Logger.Metadata.Value) -> String {
+    private func stringify(_ value: Logging.Logger.Metadata.Value) -> String {
         switch value {
         case .string(let string):
-            string
+            return string
         case .stringConvertible(let convertible):
-            convertible.description
+            return convertible.description
         case .array(let array):
-            "[" + array.map(self.stringify).joined(separator: ", ") + "]"
+            return "[" + array.map(self.stringify).joined(separator: ", ") + "]"
         case .dictionary(let dictionary):
             let entries = dictionary
                 .sorted(by: { $0.key < $1.key })
@@ -235,7 +235,7 @@ private struct RepoBarLogHandler: LogHandler {
         }
     }
 
-    private func osLogType(for level: Logger.Level) -> OSLogType {
+    private func osLogType(for level: Logging.Logger.Level) -> OSLogType {
         switch level {
         case .trace, .debug:
             .debug
