@@ -4,6 +4,7 @@
 
 - Add repo submenu changelog preview (CHANGELOG.md or CHANGELOG) with inline markdown rendering.
 - Changelog submenu: move under Open in GitHub, make preview scrollable, and show entry counts since last release.
+- Improve menu loading UX (repo loading row, earlier contribution fetch) and restore markdown formatting in changelog preview.
 - Fix settings login to use default GitHub credentials when blank, refresh after sign-in, and avoid stuck state.
 - iOS: fix light/dark glass styling and switch to a full-screen login layout.
 - iOS: use the modern `UILaunchScreen` plist entry to avoid letterboxed launch.
@@ -14,6 +15,7 @@
 - iOS: silence AppIntents metadata build warnings.
 - iOS: add the RepoBar logo to the login screen and app icon.
 - iOS: present the logo in a squircle with more padding on login.
+- iOS: add activity/commit icons in the activity list.
 - Fix CLI: allow invoking bundled `repobarcli` directly (argv0 normalization).
 - Fix CLI auth refresh: show actionable error when refresh response is missing tokens.
 - Add Settings installer to link `repobar` CLI into common Homebrew paths.
