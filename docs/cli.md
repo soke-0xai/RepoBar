@@ -38,7 +38,8 @@ Binary name: `repobar`
 - `refresh`: refresh pinned repositories using current settings.
 - `contributions`: fetch contribution heatmap for a user.
   - Flags: `--login`.
-- `changelog <path>`: parse a changelog and summarize entries.
+- `changelog [path]`: parse a changelog and summarize entries.
+  - Defaults to `CHANGELOG.md`, then `CHANGELOG` in the git root or current directory.
   - Flags: `--release`, `--json`, `--plain`, `--no-color`.
 - `markdown <path>`: render markdown to ANSI text.
   - Flags: `--width`, `--no-wrap`, `--plain`, `--no-color`.

@@ -48,11 +48,8 @@ struct ChangelogCommand: CommanderRunnableCommand {
     }
 
     mutating func run() async throws {
-        guard let path, path.isEmpty == false else {
-            throw ValidationError("Missing changelog file path")
-        }
-
-        let markdown = try String(contentsOfFile: path, encoding: .utf8)
+        let changelogURL = try resolveChangelogURL(explicitPath: path)
+        let markdown = try String(contentsOf: changelogURL, encoding: .utf8)
         let parsed = ChangelogParser.parse(markdown: markdown)
         let presentation = ChangelogParser.presentation(parsed: parsed, releaseTag: releaseTag)
 
@@ -88,4 +85,50 @@ struct ChangelogCommand: CommanderRunnableCommand {
             print("Presentation: -")
         }
     }
+}
+
+private func resolveChangelogURL(explicitPath: String?) throws -> URL {
+    if let path = explicitPath, path.isEmpty == false {
+        return URL(fileURLWithPath: path)
+    }
+
+    let roots = [gitRootURL(), URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)]
+        .compactMap { $0 }
+    let candidates = ["CHANGELOG.md", "CHANGELOG"]
+    let manager = FileManager.default
+
+    for root in roots {
+        for name in candidates {
+            let url = root.appendingPathComponent(name)
+            var isDirectory: ObjCBool = false
+            if manager.fileExists(atPath: url.path, isDirectory: &isDirectory), !isDirectory.boolValue {
+                return url
+            }
+        }
+    }
+
+    throw ValidationError("Missing changelog file. Provide a path or add CHANGELOG.md/CHANGELOG.")
+}
+
+private func gitRootURL() -> URL? {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+    process.arguments = ["rev-parse", "--show-toplevel"]
+    let output = Pipe()
+    process.standardOutput = output
+    process.standardError = Pipe()
+
+    do {
+        try process.run()
+    } catch {
+        return nil
+    }
+    process.waitUntilExit()
+    guard process.terminationStatus == 0 else { return nil }
+
+    let data = output.fileHandleForReading.readDataToEndOfFile()
+    let path = String(decoding: data, as: UTF8.self)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    guard path.isEmpty == false else { return nil }
+    return URL(fileURLWithPath: path, isDirectory: true)
 }

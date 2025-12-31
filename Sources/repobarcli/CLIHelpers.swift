@@ -271,7 +271,7 @@ func printHelp(_ target: HelpTarget) {
           repobar local [--root PATH] [--depth N] [--sync] [--limit N] [--json] [--plain]
           repobar refresh [--json] [--plain]
           repobar contributions [--login USER] [--json] [--plain]
-          repobar changelog <path> [--release TAG] [--json] [--plain]
+          repobar changelog [path] [--release TAG] [--json] [--plain]
           repobar markdown <path> [--width N] [--no-wrap] [--plain] [--no-color]
           repobar login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
           repobar logout
@@ -408,7 +408,7 @@ func printHelp(_ target: HelpTarget) {
         repobar changelog - parse a changelog and summarize entries
 
         Usage:
-          repobar changelog <path> [--release TAG] [--json] [--plain]
+          repobar changelog [path] [--release TAG] [--json] [--plain]
 
         Options:
           --release TAG  Release tag to compare against (ex: v1.0.0)
