@@ -81,6 +81,14 @@ struct AccountSettingsView: View {
             if let enterprise = self.session.settings.enterpriseHost {
                 self.enterpriseHost = enterprise.absoluteString
             }
+            if self.session.settings.enterpriseHost == nil {
+                if self.clientID.isEmpty {
+                    self.clientID = RepoBarAuthDefaults.clientID
+                }
+                if self.clientSecret.isEmpty {
+                    self.clientSecret = RepoBarAuthDefaults.clientSecret
+                }
+            }
         }
     }
 
@@ -105,17 +113,32 @@ struct AccountSettingsView: View {
                 self.session.settings.enterpriseHost = nil
                 self.validationError = nil
             }
+            let usingEnterprise = self.session.settings.enterpriseHost != nil
+            let effectiveClientID = self.clientID.isEmpty && !usingEnterprise
+                ? RepoBarAuthDefaults.clientID
+                : self.clientID
+            let effectiveClientSecret = self.clientSecret.isEmpty && !usingEnterprise
+                ? RepoBarAuthDefaults.clientSecret
+                : self.clientSecret
+            if usingEnterprise && (effectiveClientID.isEmpty || effectiveClientSecret.isEmpty) {
+                self.validationError = "Client ID and Client Secret are required for enterprise login."
+                self.session.account = .loggedOut
+                return
+            }
             do {
                 try await self.appState.auth.login(
-                    clientID: self.clientID,
-                    clientSecret: self.clientSecret,
+                    clientID: effectiveClientID,
+                    clientSecret: effectiveClientSecret,
                     host: self.session.settings.enterpriseHost ?? self.session.settings.githubHost,
                     loopbackPort: self.session.settings.loopbackPort
                 )
                 if let user = try? await appState.github.currentUser() {
                     self.session.account = .loggedIn(user)
                     self.session.lastError = nil
+                } else {
+                    self.session.account = .loggedIn(UserIdentity(username: "", host: self.session.settings.githubHost))
                 }
+                await self.appState.refresh()
             } catch {
                 self.session.account = .loggedOut
                 self.session.lastError = error.userFacingMessage
