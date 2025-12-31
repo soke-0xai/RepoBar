@@ -376,11 +376,10 @@ struct CommitsCommand: CommanderRunnableCommand {
         }
 
         let scope = self.scope ?? context.settings.appearance.activityScope
-        let login: String
-        if let resolved = self.login ?? target {
-            login = resolved
+        let login: String = if let resolved = self.login ?? target {
+            resolved
         } else {
-            login = try await context.client.currentUser().username
+            try await context.client.currentUser().username
         }
         let commits = try await context.client.userCommitEvents(username: login, scope: scope, limit: self.limit)
 
@@ -466,11 +465,10 @@ struct ActivityCommand: CommanderRunnableCommand {
         }
 
         let scope = self.scope ?? context.settings.appearance.activityScope
-        let login: String
-        if let resolved = self.login ?? target {
-            login = resolved
+        let login: String = if let resolved = self.login ?? target {
+            resolved
         } else {
-            login = try await context.client.currentUser().username
+            try await context.client.currentUser().username
         }
         let events = try await context.client.userActivityEvents(username: login, scope: scope, limit: self.limit)
 

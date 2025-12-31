@@ -95,7 +95,7 @@ struct LocalRepoResolution {
     let status: LocalRepoStatus?
 
     var displayName: String {
-        status?.displayName ?? PathFormatter.displayString(path.path)
+        self.status?.displayName ?? PathFormatter.displayString(self.path.path)
     }
 }
 

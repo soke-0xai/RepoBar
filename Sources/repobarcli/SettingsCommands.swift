@@ -39,7 +39,7 @@ struct PinCommand: CommanderRunnableCommand {
             action: "Pinned",
             repoName: normalized,
             settings: settings,
-            output: output
+            output: self.output
         )
     }
 }
@@ -78,7 +78,7 @@ struct UnpinCommand: CommanderRunnableCommand {
             action: "Unpinned",
             repoName: normalized,
             settings: settings,
-            output: output
+            output: self.output
         )
     }
 }
@@ -120,7 +120,7 @@ struct HideCommand: CommanderRunnableCommand {
             action: "Hidden",
             repoName: normalized,
             settings: settings,
-            output: output
+            output: self.output
         )
     }
 }
@@ -159,7 +159,7 @@ struct ShowCommand: CommanderRunnableCommand {
             action: "Shown",
             repoName: normalized,
             settings: settings,
-            output: output
+            output: self.output
         )
     }
 }

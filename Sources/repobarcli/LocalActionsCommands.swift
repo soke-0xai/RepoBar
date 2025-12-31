@@ -336,7 +336,7 @@ struct CheckoutCommand: CommanderRunnableCommand {
         let host = settings.enterpriseHost ?? settings.githubHost
 
         let rootPath = self.destination == nil ? (self.root ?? settings.localProjects.rootPath) : nil
-        if self.destination == nil, (rootPath?.isEmpty ?? true) {
+        if self.destination == nil, rootPath?.isEmpty ?? true {
             throw ValidationError("Set a Local Projects root in Settings or pass --root")
         }
 
