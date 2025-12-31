@@ -42,10 +42,15 @@ swift build -q --product repobarcli --cache-path "${CACHE_PATH}"
 log "==> Packaging debug app bundle"
 DEFAULT_IDENTITY="${CODE_SIGN_IDENTITY:-${CODESIGN_IDENTITY:-}}"
 IDENTITY="${CODESIGN_IDENTITY:-$DEFAULT_IDENTITY}"
+SKIP_KEYCHAIN_GROUPS=0
+if [ -z "${PROVISIONING_PROFILE_SPECIFIER:-}" ]; then
+  SKIP_KEYCHAIN_GROUPS=1
+fi
 if [ -n "$IDENTITY" ]; then
-  SKIP_BUILD=1 CODESIGN_IDENTITY="$IDENTITY" "${ROOT_DIR}/Scripts/package_app.sh" debug
+  SKIP_BUILD=1 REPOBAR_SKIP_KEYCHAIN_GROUPS="$SKIP_KEYCHAIN_GROUPS" CODESIGN_IDENTITY="$IDENTITY" \
+    "${ROOT_DIR}/Scripts/package_app.sh" debug
 else
-  SKIP_BUILD=1 "${ROOT_DIR}/Scripts/package_app.sh" debug
+  SKIP_BUILD=1 REPOBAR_SKIP_KEYCHAIN_GROUPS="$SKIP_KEYCHAIN_GROUPS" "${ROOT_DIR}/Scripts/package_app.sh" debug
 fi
 
 log "==> Launching debug build"

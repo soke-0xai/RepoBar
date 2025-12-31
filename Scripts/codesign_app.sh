@@ -54,6 +54,10 @@ if [ -f "$ENTITLEMENTS" ]; then
   sed -e "s/\$(PRODUCT_BUNDLE_IDENTIFIER)/${bundle_id}/g" \
     -e "s/\$(AppIdentifierPrefix)/${app_id_prefix}/g" \
     "$ENTITLEMENTS" > "$TMP_ENTITLEMENTS"
+  if [ "${REPOBAR_SKIP_KEYCHAIN_GROUPS:-0}" -eq 1 ]; then
+    /usr/libexec/PlistBuddy -c "Delete :keychain-access-groups" "$TMP_ENTITLEMENTS" >/dev/null 2>&1 || true
+    log "Stripped keychain access groups (no provisioning profile)"
+  fi
 else
   cat > "$TMP_ENTITLEMENTS" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
