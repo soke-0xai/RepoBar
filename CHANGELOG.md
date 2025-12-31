@@ -2,6 +2,7 @@
 
 ## 0.1.1 - 2025-12-31
 
+- Fix settings login to use default GitHub credentials when blank, refresh after sign-in, and avoid stuck state.
 - iOS: fix light/dark glass styling and switch to a full-screen login layout.
 - iOS: use the modern `UILaunchScreen` plist entry to avoid letterboxed launch.
 - iOS: add a close button to the Settings sheet.
