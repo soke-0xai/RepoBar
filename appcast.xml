@@ -3,6 +3,17 @@
     <channel>
         <title>RepoBar</title>
         <item>
+            <title>0.1.1</title>
+            <pubDate>Wed, 31 Dec 2025 03:08:30 +0100</pubDate>
+            <link>https://raw.githubusercontent.com/steipete/RepoBar/main/appcast.xml</link>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>10.13</sparkle:minimumSystemVersion>
+            <description><![CDATA[<ul><li>Fix CLI: allow invoking bundled `repobarcli` directly (argv0 normalization).</li></ul>
+]]></description>
+            <enclosure url="https://github.com/steipete/RepoBar/releases/download/v0.1.1/RepoBar-0.1.1.zip" length="11338886" type="application/octet-stream" sparkle:edSignature="nJ4XzYOz3dPYXdEXPJUnYCNJjdnR/j9l7yy5lgT7vxvr8yhe3e39B9Gh4Maf+Nqg5pNsL3xVPcCgbAraiXj9Ag=="/>
+        </item>
+        <item>
             <title>0.1.0</title>
             <pubDate>Wed, 31 Dec 2025 02:17:28 +0100</pubDate>
             <link>https://raw.githubusercontent.com/steipete/RepoBar/main/appcast.xml</link>
