@@ -1,4 +1,5 @@
 @testable import repobarcli
+import Commander
 import RepoBarCore
 import Testing
 
@@ -8,6 +9,15 @@ struct CLIArgumentNormalizerTests {
         let argv = CLIArgumentNormalizer.normalize(["/Applications/RepoBar.app/Contents/MacOS/repobarcli", "status"])
         #expect(argv.first == RepoBarRoot.commandName)
         #expect(argv.dropFirst().first == "status")
+    }
+
+    @Test
+    @MainActor
+    func normalizedArgsResolveToStatusCommand() throws {
+        let argv = CLIArgumentNormalizer.normalize(["/Applications/RepoBar.app/Contents/MacOS/repobarcli", "status"])
+        let program = Program(descriptors: [RepoBarRoot.descriptor()])
+        let invocation = try program.resolve(argv: argv)
+        #expect(invocation.path.last == StatusCommand.commandName)
     }
 
     @Test
