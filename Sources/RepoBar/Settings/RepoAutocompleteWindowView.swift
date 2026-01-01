@@ -221,15 +221,40 @@ private struct RepoAutocompleteRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 16)
 
-                Text(self.repo.fullName)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text(self.repo.fullName)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+
+                        HStack(spacing: 6) {
+                            if self.repo.isFork { Badge(text: "Fork") }
+                            if self.repo.isArchived { Badge(text: "Archived") }
+                            if self.repo.discussionsEnabled == true { Badge(text: "Discussions") }
+                        }
+                    }
+
+                    Text(self.subtitleText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
 
                 Spacer()
 
-                Text(self.repo.owner)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("★ \(Self.compactCount(self.repo.stars))")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+
+                    if let pushedAt = self.repo.pushedAt {
+                        Text("pushed \(Self.compactAge(since: pushedAt))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                    }
+                }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
@@ -248,5 +273,75 @@ private struct RepoAutocompleteRow: View {
                 Spacer()
             }
         )
+    }
+
+    private var subtitleText: String {
+        var parts: [String] = []
+        parts.append("★ \(Self.compactCount(self.repo.stars))")
+        parts.append("⑂ \(Self.compactCount(self.repo.forks))")
+        parts.append("\(Self.compactCount(self.repo.openIssues)) issues")
+        if let pushedAt = self.repo.pushedAt {
+            parts.append("pushed \(Self.compactAge(since: pushedAt))")
+        }
+        return parts.joined(separator: "  •  ")
+    }
+
+    private static func compactCount(_ value: Int) -> String {
+        guard value >= 1000 else { return "\(value)" }
+
+        let divisor: Double
+        let suffix: String
+        if value >= 1_000_000 {
+            divisor = 1_000_000
+            suffix = "m"
+        } else {
+            divisor = 1000
+            suffix = "k"
+        }
+
+        let scaled = Double(value) / divisor
+        let rounded = (scaled * 10).rounded() / 10
+        let text = if rounded.truncatingRemainder(dividingBy: 1) == 0 {
+            "\(Int(rounded))"
+        } else {
+            String(format: "%.1f", rounded)
+        }
+        return "\(text)\(suffix)"
+    }
+
+    private static func compactAge(since date: Date) -> String {
+        let seconds = max(0, Date().timeIntervalSince(date))
+        let minutes = Int(seconds / 60)
+        if minutes < 1 { return "now" }
+        if minutes < 60 { return "\(minutes)m" }
+
+        let hours = minutes / 60
+        if hours < 24 { return "\(hours)h" }
+
+        let days = hours / 24
+        if days < 7 { return "\(days)d" }
+
+        let weeks = days / 7
+        if weeks < 8 { return "\(weeks)w" }
+
+        let months = days / 30
+        if months < 24 { return "\(months)mo" }
+
+        let years = days / 365
+        return "\(years)y"
+    }
+}
+
+private struct Badge: View {
+    let text: String
+
+    var body: some View {
+        Text(self.text)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Color.primary.opacity(0.06), in: Capsule())
+            .overlay(Capsule().stroke(Color.primary.opacity(0.08), lineWidth: 1))
     }
 }
