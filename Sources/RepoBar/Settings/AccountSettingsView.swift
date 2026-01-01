@@ -1,3 +1,4 @@
+import Foundation
 import RepoBarCore
 import SwiftUI
 
@@ -10,6 +11,10 @@ struct AccountSettingsView: View {
     @State private var hostMode: HostMode = .githubCom
     @State private var validationError: String?
     @State private var tokenValidation: TokenValidationState = .unknown
+    private let enterpriseFieldMinWidth: CGFloat = 260
+    private let spinnerSize: CGFloat = 14
+    private let tokenCheckTimeout: TimeInterval = 8
+    private let tokenRefreshTimeout: TimeInterval = 12
 
     var body: some View {
         Form {
@@ -50,6 +55,8 @@ struct AccountSettingsView: View {
                             HStack(spacing: 8) {
                                 if self.tokenValidation == .checking {
                                     ProgressView()
+                                        .controlSize(.small)
+                                        .frame(width: self.spinnerSize, height: self.spinnerSize)
                                 }
                                 Text(status)
                                     .font(.caption)
@@ -73,12 +80,18 @@ struct AccountSettingsView: View {
                     if self.hostMode == .enterprise {
                         LabeledContent("Enterprise Base URL") {
                             TextField("https://ghe.example.com", text: self.$enterpriseHost)
+                                .frame(minWidth: self.enterpriseFieldMinWidth)
+                                .layoutPriority(1)
                         }
                         LabeledContent("Client ID") {
                             TextField("", text: self.$clientID)
+                                .frame(minWidth: self.enterpriseFieldMinWidth)
+                                .layoutPriority(1)
                         }
                         LabeledContent("Client Secret") {
                             SecureField("", text: self.$clientSecret)
+                                .frame(minWidth: self.enterpriseFieldMinWidth)
+                                .layoutPriority(1)
                         }
                         Text("Create an OAuth App in your enterprise server. Callback URL: http://127.0.0.1:53682/callback")
                             .font(.caption)
@@ -91,6 +104,8 @@ struct AccountSettingsView: View {
                     HStack(spacing: 8) {
                         if self.session.account == .loggingIn {
                             ProgressView()
+                                .controlSize(.small)
+                                .frame(width: self.spinnerSize, height: self.spinnerSize)
                         }
                         Button(self.session.account == .loggingIn ? "Signing in…" : self.hostMode == .enterprise ? "Sign in to Enterprise" : "Sign in to GitHub.com") {
                             self.login()
@@ -214,17 +229,25 @@ struct AccountSettingsView: View {
         guard case .loggedIn = self.session.account else { return }
         if self.tokenValidation == .checking { return }
         self.tokenValidation = .checking
+        let started = Date()
+        await self.logAuth("Auth: token check started")
         do {
-            let user = try await self.appState.github.currentUser()
+            let user = try await self.withTimeout(seconds: self.tokenCheckTimeout) {
+                try await self.appState.github.currentUser()
+            }
             self.session.account = .loggedIn(user)
             self.session.lastError = nil
             self.tokenValidation = .valid
+            await self.logAuth("Auth: token check ok in \(Self.formatElapsed(since: started))")
         } catch {
             if error.isAuthenticationFailure {
+                self.tokenValidation = .invalid("Authentication required.")
+                await self.logAuth("Auth: token check auth failure in \(Self.formatElapsed(since: started))")
                 await self.appState.handleAuthenticationFailure(error)
                 return
             }
             self.tokenValidation = .invalid(error.userFacingMessage)
+            await self.logAuth("Auth: token check failed in \(Self.formatElapsed(since: started)): \(error.userFacingMessage)")
         }
     }
 
@@ -232,18 +255,26 @@ struct AccountSettingsView: View {
         guard case .loggedIn = self.session.account else { return }
         if self.tokenValidation == .checking { return }
         self.tokenValidation = .checking
+        let started = Date()
+        await self.logAuth("Auth: token refresh started")
         do {
-            let refreshed = try await self.appState.auth.refreshIfNeeded(force: true)
+            let refreshed = try await self.withTimeout(seconds: self.tokenRefreshTimeout) {
+                try await self.appState.auth.refreshIfNeeded(force: true)
+            }
             guard refreshed != nil else {
                 throw URLError(.userAuthenticationRequired)
             }
+            await self.logAuth("Auth: token refresh ok in \(Self.formatElapsed(since: started))")
             await self.validateToken()
         } catch {
             if error.isAuthenticationFailure {
+                self.tokenValidation = .invalid("Authentication required.")
+                await self.logAuth("Auth: token refresh auth failure in \(Self.formatElapsed(since: started))")
                 await self.appState.handleAuthenticationFailure(error)
                 return
             }
             self.tokenValidation = .invalid(error.userFacingMessage)
+            await self.logAuth("Auth: token refresh failed in \(Self.formatElapsed(since: started)): \(error.userFacingMessage)")
         }
     }
 
@@ -269,6 +300,31 @@ struct AccountSettingsView: View {
         default:
             .secondary
         }
+    }
+
+    private func logAuth(_ message: String) async {
+        await DiagnosticsLogger.shared.message(message)
+    }
+
+    private func withTimeout<T>(
+        seconds: TimeInterval,
+        operation: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask { try await operation() }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw URLError(.timedOut)
+            }
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
+    }
+
+    private static func formatElapsed(since start: Date) -> String {
+        let elapsed = Date().timeIntervalSince(start)
+        return String(format: "%.2fs", elapsed)
     }
 }
 
