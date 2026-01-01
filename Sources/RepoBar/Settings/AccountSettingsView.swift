@@ -7,11 +7,19 @@ struct AccountSettingsView: View {
     @State private var clientID = "Iv23liGm2arUyotWSjwJ"
     @State private var clientSecret = ""
     @State private var enterpriseHost = ""
+    @State private var hostMode: HostMode = .githubCom
     @State private var validationError: String?
 
     var body: some View {
         Form {
-            Section("GitHub.com") {
+            Section("Account") {
+                Picker("Host", selection: self.$hostMode) {
+                    ForEach(HostMode.allCases, id: \.self) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+
                 switch self.session.account {
                 case let .loggedIn(user):
                     VStack(alignment: .leading, spacing: 12) {
@@ -40,17 +48,31 @@ struct AccountSettingsView: View {
                     }
                     .padding(.vertical, 4)
                 default:
-                    LabeledContent("Client ID") {
-                        TextField("", text: self.$clientID)
-                    }
-                    LabeledContent("Client Secret") {
-                        SecureField("", text: self.$clientSecret)
+                    if self.hostMode == .enterprise {
+                        LabeledContent("Enterprise Base URL") {
+                            TextField("https://ghe.example.com", text: self.$enterpriseHost)
+                        }
+                        LabeledContent("Client ID") {
+                            TextField("", text: self.$clientID)
+                        }
+                        LabeledContent("Client Secret") {
+                            SecureField("", text: self.$clientSecret)
+                        }
+                        Text("Create an OAuth App in your enterprise server. Callback URL: http://127.0.0.1:53682/callback")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Uses the built-in GitHub.com OAuth app.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                     HStack(spacing: 8) {
                         if self.session.account == .loggingIn {
                             ProgressView()
                         }
-                        Button(self.session.account == .loggingIn ? "Signing in…" : "Sign in") { self.login() }
+                        Button(self.session.account == .loggingIn ? "Signing in…" : self.hostMode == .enterprise ? "Sign in to Enterprise" : "Sign in to GitHub.com") {
+                            self.login()
+                        }
                             .disabled(self.session.account == .loggingIn)
                             .buttonStyle(.borderedProminent)
                     }
@@ -58,15 +80,6 @@ struct AccountSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            }
-
-            Section("Enterprise (optional)") {
-                LabeledContent("Base URL") {
-                    TextField("https://host", text: self.$enterpriseHost)
-                }
-                Text("Trusted TLS only; leave blank if unused.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             if let validationError {
@@ -81,8 +94,10 @@ struct AccountSettingsView: View {
         .onAppear {
             if let enterprise = self.session.settings.enterpriseHost {
                 self.enterpriseHost = enterprise.absoluteString
+                self.hostMode = .enterprise
             }
             if self.session.settings.enterpriseHost == nil {
+                self.hostMode = .githubCom
                 if self.clientID.isEmpty {
                     self.clientID = RepoBarAuthDefaults.clientID
                 }
@@ -96,16 +111,16 @@ struct AccountSettingsView: View {
     private func login() {
         Task { @MainActor in
             self.session.account = .loggingIn
-            let enterpriseURL = self.normalizedEnterpriseHost()
+            let enterpriseURL = self.hostMode == .enterprise ? self.normalizedEnterpriseHost() : nil
 
-            if let enterpriseURL {
+            if self.hostMode == .enterprise, let enterpriseURL {
                 self.session.settings.enterpriseHost = enterpriseURL
                 await self.appState.github.setAPIHost(enterpriseURL.appending(path: "/api/v3"))
                 self.session.settings.githubHost = enterpriseURL
                 self.validationError = nil
             } else {
-                if !self.enterpriseHost.trimmingCharacters(in: .whitespaces).isEmpty {
-                    self.validationError = "Enterprise host must be a valid https:// URL with a trusted certificate."
+                if self.hostMode == .enterprise {
+                    self.validationError = "Enterprise Base URL must be a valid https:// URL with a trusted certificate."
                     self.session.account = .loggedOut
                     return
                 }
@@ -157,5 +172,19 @@ struct AccountSettingsView: View {
         components.query = nil
         components.fragment = nil
         return components.url
+    }
+}
+
+private enum HostMode: String, CaseIterable {
+    case githubCom
+    case enterprise
+
+    var label: String {
+        switch self {
+        case .githubCom:
+            return "GitHub.com"
+        case .enterprise:
+            return "Enterprise"
+        }
     }
 }

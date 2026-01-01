@@ -5,6 +5,7 @@
 - macOS: add “Show only my repositories” toggle (owner filter) for repo lists and search.
 - macOS: fix the toggle to reset to “show all” when disabled; disable it when signed out.
 - macOS: fix commit links to respect GitHub Enterprise host (#9).
+- macOS: add GitHub.com vs Enterprise login picker with OAuth help text (#4).
 
 ## 0.1.2 - 2025-12-31
 
