@@ -1,0 +1,232 @@
+public enum Selection {
+  /// A single field selection.
+  case field(Field)
+  /// A fragment spread of a named fragment definition.
+  case fragment(any Fragment.Type)
+  /// An inline fragment with a child selection set nested in a parent selection set.
+  case inlineFragment(any InlineFragment.Type)
+  /// A fragment spread or inline fragment marked with the `@defer` directive.
+  case deferred(if: Condition? = nil, any Deferrable.Type, label: String)
+  /// A group of selections that have `@include/@skip` directives.
+  case conditional(Conditions, [Selection])
+
+  public struct Field {
+    public let name: String
+    public let alias: String?
+    public let arguments: [String: InputValue]?
+    public let type: OutputType
+    public let fieldPolicy: FieldPolicyDirective?
+
+    public var responseKey: String {
+      return alias ?? name
+    }
+
+    public init(
+      _ name: String,
+      alias: String? = nil,
+      type: OutputType,
+      arguments: [String: InputValue]? = nil,
+      fieldPolicy: FieldPolicyDirective? = nil
+    ) {
+      self.name = name
+      self.alias = alias
+      self.arguments = arguments
+      self.type = type
+      self.fieldPolicy = fieldPolicy
+    }
+
+    public indirect enum OutputType: Sendable {
+      case scalar(any ScalarType.Type)
+      case customScalar(any CustomScalarType.Type)
+      case object(any RootSelectionSet.Type)
+      case nonNull(OutputType)
+      case list(OutputType)
+
+      public var namedType: OutputType {
+        switch self {
+        case .nonNull(let innerType), .list(let innerType):
+          return innerType.namedType
+        case .scalar, .customScalar, .object:
+          return self
+        }
+      }
+
+      public var isNullable: Bool {
+        if case .nonNull = self { return false }
+        return true
+      }
+    }
+  }
+  
+  public struct FieldPolicyDirective: Hashable {
+    public let keyArgs: [String]
+    
+    public init(
+      keyArgs: [String]
+    ) {
+      self.keyArgs = keyArgs
+    }
+    
+  }
+
+  // MARK: - Convenience Initializers
+
+  static public func field(
+    _ name: String,
+    alias: String? = nil,
+    _ type: any OutputTypeConvertible.Type,
+    arguments: [String: InputValue]? = nil,
+    fieldPolicy: FieldPolicyDirective? = nil
+  ) -> Selection {
+    .field(.init(name, alias: alias, type: type._asOutputType, arguments: arguments, fieldPolicy: fieldPolicy))
+  }
+
+  @inlinable static public func include(
+    if condition: String,
+    _ selection: Selection
+  ) -> Selection {
+    .conditional(Conditions([[Selection.Condition(stringLiteral: condition)]]), [selection])
+  }
+
+  @inlinable static public func include(
+    if condition: String,
+    _ selections: [Selection]
+  ) -> Selection {
+    .conditional(Conditions([[Selection.Condition(stringLiteral: condition)]]), selections)
+  }
+
+  @inlinable static public func include(
+    if conditions: Conditions,
+    _ selection: Selection
+  ) -> Selection {
+    .conditional(conditions, [selection])
+  }
+
+  @inlinable static public func include(
+    if conditions: Conditions,
+    _ selections: [Selection]
+  ) -> Selection {
+    .conditional(conditions, selections)
+  }
+
+  @inlinable static public func include(
+    if condition: Condition,
+    _ selection: Selection
+  ) -> Selection {
+    .conditional(Conditions([[condition]]), [selection])
+  }
+
+  @inlinable static public func include(
+    if condition: Condition,
+    _ selections: [Selection]
+  ) -> Selection {
+    .conditional(Conditions([[condition]]), selections)
+  }
+
+  @inlinable static public func include(
+    if conditions: [Condition],
+    _ selection: Selection
+  ) -> Selection {
+    .conditional(Conditions([conditions]), [selection])
+  }
+
+  @inlinable static public func include(
+    if conditions: [Condition],
+    _ selections: [Selection]
+  ) -> Selection {
+    .conditional(Conditions([conditions]), selections)
+  }
+
+}
+
+// MARK: - Hashable Conformance
+
+extension Selection: Hashable {
+  public static func == (lhs: Selection, rhs: Selection) -> Bool {
+    switch (lhs, rhs) {
+    case let (.field(lhs), .field(rhs)):
+      return lhs == rhs
+    case let (.fragment(lhsFragment), .fragment(rhsFragment)):
+      return lhsFragment == rhsFragment
+    case let (.inlineFragment(lhsFragment), .inlineFragment(rhsFragment)):
+      return lhsFragment == rhsFragment
+    case let (.deferred(lhsCondition, lhsFragment, lhsLabel),
+              .deferred(rhsCondition, rhsFragment, rhsLabel)):
+      return lhsCondition == rhsCondition &&
+      lhsFragment == rhsFragment &&
+      lhsLabel == rhsLabel
+    case let (.conditional(lhsConditions, lhsSelections),
+              .conditional(rhsConditions, rhsSelections)):
+      return lhsConditions == rhsConditions && lhsSelections == rhsSelections
+    default: return false
+    }
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    switch self {
+    case let .field(field):
+      hasher.combine(field)
+    case let .fragment(fragmentType):
+      hasher.combine(ObjectIdentifier(fragmentType))
+    case let .inlineFragment(fragmentType):
+      hasher.combine(ObjectIdentifier(fragmentType))
+    case let .deferred(condition, fragmentType, label):
+      hasher.combine(condition)
+      hasher.combine(ObjectIdentifier(fragmentType))
+      hasher.combine(label)
+    case let .conditional(condition, selections):
+      hasher.combine(condition)
+      hasher.combine(selections)
+    }
+  }
+}
+
+extension Selection.Field: Hashable {
+
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(name)
+    hasher.combine(alias)
+    hasher.combine(arguments)
+    hasher.combine(type)
+  }
+
+  public static func == (lhs: Selection.Field, rhs: Selection.Field) -> Bool {
+    lhs.name == rhs.name &&
+    lhs.alias == rhs.alias &&
+    lhs.arguments == rhs.arguments &&
+    lhs.type == rhs.type
+  }
+}
+
+extension Selection.Field.OutputType: Hashable {
+  public static func == (lhs: Selection.Field.OutputType, rhs: Selection.Field.OutputType) -> Bool {
+    switch (lhs, rhs) {
+    case let (.scalar(lhs), .scalar(rhs)):
+      return lhs == rhs
+    case let (.customScalar(lhs), .customScalar(rhs)):
+      return lhs == rhs
+    case let (.object(lhs), .object(rhs)):
+      return lhs == rhs
+    case let (.nonNull(lhs), .nonNull(rhs)):
+      return lhs == rhs
+    case let (.list(lhs), .list(rhs)):
+      return lhs == rhs
+    default: return false
+    }
+  }
+
+  public func hash(into hasher: inout Hasher) {
+    switch self {
+    case let .scalar(valueType):
+      hasher.combine(ObjectIdentifier(valueType))
+    case let .customScalar(valueType):
+      hasher.combine(ObjectIdentifier(valueType))
+    case let .object(objectType):
+      hasher.combine(ObjectIdentifier(objectType))
+    case
+      let .nonNull(nested),
+      let .list(nested):
+      hasher.combine(nested)
+    }
+  }
+}

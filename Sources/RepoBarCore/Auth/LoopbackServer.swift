@@ -32,9 +32,10 @@ public final class LoopbackServer {
             return pendingResult
         }
 
-        let timeoutTask = Task { @MainActor in
+        let timeoutTask = Task { @MainActor [weak self] in
+            guard let self else { return }
             try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
-            if let continuation {
+            if let continuation = self.continuation {
                 continuation.resume(throwing: URLError(.timedOut))
                 self.continuation = nil
             }
@@ -68,7 +69,7 @@ public final class LoopbackServer {
                     connection.cancel()
                     Task { @MainActor in self?.listener?.cancel() }
                 })
-                if let continuation {
+                if let continuation = self.continuation {
                     continuation.resume(returning: parsed)
                     self.continuation = nil
                 } else {

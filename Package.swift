@@ -1,16 +1,19 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.0
 import PackageDescription
 
 let package = Package(
     name: "RepoBar",
     platforms: [
-        .macOS(.v15),
-        .iOS(.v26),
+        // Sonoma is macOS 14.x, so target that as the minimum.
+        .macOS(.v14),
+        // Keep an iOS deployment target for the shared core, but use a
+        // currently supported version so the manifest parses on older tools.
+        .iOS(.v17),
     ],
     products: [
         .library(name: "RepoBarCore", targets: ["RepoBarCore"]),
-        // Named to avoid colliding with `RepoBar` on case-insensitive filesystems.
-        .executable(name: "repobarcli", targets: ["repobarcli"]),
+        // Main macOS menu bar app.
+        .executable(name: "RepoBar", targets: ["RepoBar"]),
     ],
     dependencies: [
         .package(url: "https://github.com/steipete/Commander", from: "0.2.0"),
@@ -19,9 +22,9 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-algorithms", from: "1.2.1"),
         .package(url: "https://github.com/apple/swift-log", from: "1.8.0"),
         .package(url: "https://github.com/openid/AppAuth-iOS", from: "2.0.0"),
-        .package(url: "https://github.com/apollographql/apollo-ios", from: "2.0.3"),
+        // Use a locally vendored Apollo 2.0.3 package to avoid requiring newer Swift tools.
+        .package(name: "apollo-ios", path: "Vendor/apollo-ios"),
         .package(url: "https://github.com/onevcat/Kingfisher", from: "8.6.0"),
-        .package(url: "https://github.com/steipete/Swiftdansi", from: "0.1.1"),
         .package(url: "https://github.com/apple/swift-markdown", from: "0.7.3"),
     ],
     targets: [
@@ -31,9 +34,6 @@ let package = Package(
                 .product(name: "Apollo", package: "apollo-ios"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "Markdown", package: "swift-markdown"),
-            ],
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
             ]),
         .executableTarget(
             name: "RepoBar",
@@ -48,39 +48,15 @@ let package = Package(
             ],
             exclude: ["Resources/Info.plist"],
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
                 .unsafeFlags([
                     "-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist",
                     "-Xlinker", "Sources/RepoBar/Resources/Info.plist",
                 ]),
-                ]),
-        .executableTarget(
-            name: "repobarcli",
-            dependencies: [
-                .product(name: "Commander", package: "Commander"),
-                .product(name: "Swiftdansi", package: "Swiftdansi"),
-                "RepoBarCore",
-            ],
-            path: "Sources/repobarcli",
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
             ]),
         .testTarget(
             name: "RepoBarTests",
             dependencies: ["RepoBar", "RepoBarCore"],
             swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
-                .enableExperimentalFeature("SwiftTesting"),
-            ]),
-        .testTarget(
-            name: "repobarcliTests",
-            dependencies: ["repobarcli"],
-            path: "Tests/repobarcliTests",
-            resources: [
-                .process("Fixtures"),
-            ],
-            swiftSettings: [
-                .enableUpcomingFeature("StrictConcurrency"),
                 .enableExperimentalFeature("SwiftTesting"),
             ]),
     ])

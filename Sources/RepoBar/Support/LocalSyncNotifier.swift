@@ -37,7 +37,7 @@ actor LocalSyncNotifier {
             content: content,
             trigger: nil
         )
-        _ = try? await center.add(request)
+        center.add(request) { _ in }
     }
 
     private func authorizationStatus(using center: UNUserNotificationCenter) async -> UNAuthorizationStatus {

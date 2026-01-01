@@ -17,9 +17,10 @@ else
   log "==> Building ${APP_NAME} (${CONFIGURATION})"
   if [ "${CONFIGURATION}" = "release" ]; then
     ARCH_ARGS=(--arch arm64 --arch x86_64)
+    swift build -c "${CONFIGURATION}" "${ARCH_ARGS[@]}"
+  else
+    swift build -c "${CONFIGURATION}"
   fi
-  swift build -c "${CONFIGURATION}" "${ARCH_ARGS[@]}"
-  swift build -c "${CONFIGURATION}" "${ARCH_ARGS[@]}" --product repobarcli
 fi
 
 BUILD_DIR="${ROOT_DIR}/.build/${CONFIGURATION}"

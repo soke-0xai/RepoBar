@@ -89,7 +89,7 @@ extension AppState {
         return results
     }
 
-    private func capture<T>(_ work: @escaping () async throws -> T) async -> Result<T, Error> {
+    private func capture<T: Sendable>(_ work: @escaping () async throws -> T) async -> Result<T, Error> {
         do { return try await .success(work()) } catch { return .failure(error) }
     }
 }

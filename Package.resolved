@@ -1,15 +1,6 @@
 {
-  "originHash" : "88c021100d9cfb662e80c5e047f9f72f04129f7079c411478303e93b621dcec6",
+  "originHash" : "d9cf2b66594820f8b67cb0a7612f1d474f902635200bdee2aff7dabcb1a1ffd7",
   "pins" : [
-    {
-      "identity" : "apollo-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apollographql/apollo-ios",
-      "state" : {
-        "revision" : "68aba4be6a951a26f2f587e132ed8f82b5a63511",
-        "version" : "2.0.4"
-      }
-    },
     {
       "identity" : "appauth-ios",
       "kind" : "remoteSourceControl",
@@ -65,30 +56,12 @@
       }
     },
     {
-      "identity" : "swift-argument-parser",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-argument-parser",
-      "state" : {
-        "revision" : "c5d11a805e765f52ba34ec7284bd4fcd6ba68615",
-        "version" : "1.7.0"
-      }
-    },
-    {
       "identity" : "swift-cmark",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swiftlang/swift-cmark.git",
       "state" : {
         "revision" : "5d9bdaa4228b381639fff09403e39a04926e2dbe",
         "version" : "0.7.1"
-      }
-    },
-    {
-      "identity" : "swift-displaywidth",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/ainame/swift-displaywidth",
-      "state" : {
-        "revision" : "e2bfbdf1469366483451708bca36511f4f48ddb1",
-        "version" : "0.0.3"
       }
     },
     {
@@ -116,15 +89,6 @@
       "state" : {
         "revision" : "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
         "version" : "1.1.1"
-      }
-    },
-    {
-      "identity" : "swiftdansi",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/steipete/Swiftdansi",
-      "state" : {
-        "revision" : "fb1c339a41f0452d0580a25f0b71274436759b1a",
-        "version" : "0.1.1"
       }
     }
   ],

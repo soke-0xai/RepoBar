@@ -1,5 +1,13 @@
 # RepoBar — GitHub at a glance from your menu bar
 
+> ⚠️ This repository is a **personal fork** of the original RepoBar project at
+> https://github.com/steipete/RepoBar.
+>
+> This fork is adapted to run on macOS Sonoma (14.x) with the system Swift 6.0
+> toolchain and without requiring administrator privileges or Xcode.app. It is
+> **not** intended as an upstream pull request, and may diverge from the
+> original project.
+
 RepoBar keeps your GitHub work in view without opening a browser. Pin the repos you care about and get a clear, glanceable dashboard for CI, releases, traffic, and activity right from the macOS menu bar.
 
 ![RepoBar screenshot](docs/assets/repobar.png)
