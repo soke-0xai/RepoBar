@@ -1,3 +1,4 @@
+import Foundation
 import RepoBarCore
 import SwiftUI
 
@@ -7,11 +8,24 @@ struct AccountSettingsView: View {
     @State private var clientID = "Iv23liGm2arUyotWSjwJ"
     @State private var clientSecret = ""
     @State private var enterpriseHost = ""
+    @State private var hostMode: HostMode = .githubCom
     @State private var validationError: String?
+    @State private var tokenValidation: TokenValidationState = .unknown
+    private let enterpriseFieldMinWidth: CGFloat = 260
+    private let spinnerSize: CGFloat = 14
+    private let tokenCheckTimeout: TimeInterval = 8
+    private let tokenRefreshTimeout: TimeInterval = 12
 
     var body: some View {
         Form {
-            Section("GitHub.com") {
+            Section("Account") {
+                Picker("Host", selection: self.$hostMode) {
+                    ForEach(HostMode.allCases, id: \.self) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+
                 switch self.session.account {
                 case let .loggedIn(user):
                     VStack(alignment: .leading, spacing: 12) {
@@ -37,22 +51,67 @@ struct AccountSettingsView: View {
                             }
                             .buttonStyle(.bordered)
                         }
+                        if let status = self.tokenStatusText {
+                            HStack(spacing: 8) {
+                                if self.tokenValidation == .checking {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                        .frame(width: self.spinnerSize, height: self.spinnerSize)
+                                }
+                                Text(status)
+                                    .font(.caption)
+                                    .foregroundStyle(self.tokenStatusColor)
+                            }
+                        }
+                        HStack(spacing: 8) {
+                            Button("Check token") {
+                                Task { await self.validateToken() }
+                            }
+                            .disabled(self.tokenValidation == .checking)
+                            Button("Refresh token") {
+                                Task { await self.refreshToken() }
+                            }
+                            .disabled(self.tokenValidation == .checking)
+                        }
+                        .buttonStyle(.bordered)
                     }
                     .padding(.vertical, 4)
                 default:
-                    LabeledContent("Client ID") {
-                        TextField("", text: self.$clientID)
-                    }
-                    LabeledContent("Client Secret") {
-                        SecureField("", text: self.$clientSecret)
+                    if self.hostMode == .enterprise {
+                        LabeledContent("Enterprise Base URL") {
+                            TextField("https://ghe.example.com", text: self.$enterpriseHost)
+                                .frame(minWidth: self.enterpriseFieldMinWidth)
+                                .layoutPriority(1)
+                        }
+                        LabeledContent("Client ID") {
+                            TextField("", text: self.$clientID)
+                                .frame(minWidth: self.enterpriseFieldMinWidth)
+                                .layoutPriority(1)
+                        }
+                        LabeledContent("Client Secret") {
+                            SecureField("", text: self.$clientSecret)
+                                .frame(minWidth: self.enterpriseFieldMinWidth)
+                                .layoutPriority(1)
+                        }
+                        Text("Create an OAuth App in your enterprise server. Callback URL: http://127.0.0.1:53682/callback")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Uses the built-in GitHub.com OAuth app.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                     HStack(spacing: 8) {
                         if self.session.account == .loggingIn {
                             ProgressView()
+                                .controlSize(.small)
+                                .frame(width: self.spinnerSize, height: self.spinnerSize)
                         }
-                        Button(self.session.account == .loggingIn ? "Signing in…" : "Sign in") { self.login() }
-                            .disabled(self.session.account == .loggingIn)
-                            .buttonStyle(.borderedProminent)
+                        Button(self.session.account == .loggingIn ? "Signing in…" : self.hostMode == .enterprise ? "Sign in to Enterprise" : "Sign in to GitHub.com") {
+                            self.login()
+                        }
+                        .disabled(self.session.account == .loggingIn)
+                        .buttonStyle(.borderedProminent)
                     }
                     Text("Uses browser-based OAuth. Tokens are stored in the system Keychain.")
                         .font(.caption)
@@ -60,17 +119,14 @@ struct AccountSettingsView: View {
                 }
             }
 
-            Section("Enterprise (optional)") {
-                LabeledContent("Base URL") {
-                    TextField("https://host", text: self.$enterpriseHost)
-                }
-                Text("Trusted TLS only; leave blank if unused.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
             if let validationError {
                 Text(validationError)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+
+            if let lastError = self.session.lastError, validationError == nil {
+                Text(lastError)
                     .font(.caption)
                     .foregroundStyle(.red)
             }
@@ -81,8 +137,10 @@ struct AccountSettingsView: View {
         .onAppear {
             if let enterprise = self.session.settings.enterpriseHost {
                 self.enterpriseHost = enterprise.absoluteString
+                self.hostMode = .enterprise
             }
             if self.session.settings.enterpriseHost == nil {
+                self.hostMode = .githubCom
                 if self.clientID.isEmpty {
                     self.clientID = RepoBarAuthDefaults.clientID
                 }
@@ -91,21 +149,29 @@ struct AccountSettingsView: View {
                 }
             }
         }
+        .task(id: self.session.account) {
+            guard case .loggedIn = self.session.account else {
+                self.tokenValidation = .unknown
+                return
+            }
+            await self.validateToken()
+        }
     }
 
     private func login() {
         Task { @MainActor in
             self.session.account = .loggingIn
-            let enterpriseURL = self.normalizedEnterpriseHost()
+            self.session.lastError = nil
+            let enterpriseURL = self.hostMode == .enterprise ? self.normalizedEnterpriseHost() : nil
 
-            if let enterpriseURL {
+            if self.hostMode == .enterprise, let enterpriseURL {
                 self.session.settings.enterpriseHost = enterpriseURL
                 await self.appState.github.setAPIHost(enterpriseURL.appending(path: "/api/v3"))
                 self.session.settings.githubHost = enterpriseURL
                 self.validationError = nil
             } else {
-                if !self.enterpriseHost.trimmingCharacters(in: .whitespaces).isEmpty {
-                    self.validationError = "Enterprise host must be a valid https:// URL with a trusted certificate."
+                if self.hostMode == .enterprise {
+                    self.validationError = "Enterprise Base URL must be a valid https:// URL with a trusted certificate."
                     self.session.account = .loggedOut
                     return
                 }
@@ -157,5 +223,128 @@ struct AccountSettingsView: View {
         components.query = nil
         components.fragment = nil
         return components.url
+    }
+
+    private func validateToken() async {
+        guard case .loggedIn = self.session.account else { return }
+        if self.tokenValidation == .checking { return }
+        self.tokenValidation = .checking
+        let started = Date()
+        await self.logAuth("Auth: token check started")
+        do {
+            let user = try await self.withTimeout(seconds: self.tokenCheckTimeout) {
+                try await self.appState.github.currentUser()
+            }
+            self.session.account = .loggedIn(user)
+            self.session.lastError = nil
+            self.tokenValidation = .valid
+            await self.logAuth("Auth: token check ok in \(Self.formatElapsed(since: started))")
+        } catch {
+            if error.isAuthenticationFailure {
+                self.tokenValidation = .invalid("Authentication required.")
+                await self.logAuth("Auth: token check auth failure in \(Self.formatElapsed(since: started))")
+                await self.appState.handleAuthenticationFailure(error)
+                return
+            }
+            self.tokenValidation = .invalid(error.userFacingMessage)
+            await self.logAuth("Auth: token check failed in \(Self.formatElapsed(since: started)): \(error.userFacingMessage)")
+        }
+    }
+
+    private func refreshToken() async {
+        guard case .loggedIn = self.session.account else { return }
+        if self.tokenValidation == .checking { return }
+        self.tokenValidation = .checking
+        let started = Date()
+        await self.logAuth("Auth: token refresh started")
+        do {
+            let refreshed = try await self.withTimeout(seconds: self.tokenRefreshTimeout) {
+                try await self.appState.auth.refreshIfNeeded(force: true)
+            }
+            guard refreshed != nil else {
+                throw URLError(.userAuthenticationRequired)
+            }
+            await self.logAuth("Auth: token refresh ok in \(Self.formatElapsed(since: started))")
+            await self.validateToken()
+        } catch {
+            if error.isAuthenticationFailure {
+                self.tokenValidation = .invalid("Authentication required.")
+                await self.logAuth("Auth: token refresh auth failure in \(Self.formatElapsed(since: started))")
+                await self.appState.handleAuthenticationFailure(error)
+                return
+            }
+            self.tokenValidation = .invalid(error.userFacingMessage)
+            await self.logAuth("Auth: token refresh failed in \(Self.formatElapsed(since: started)): \(error.userFacingMessage)")
+        }
+    }
+
+    private var tokenStatusText: String? {
+        switch self.tokenValidation {
+        case .unknown:
+            "Token status not checked yet."
+        case .checking:
+            "Checking token…"
+        case .valid:
+            "Token is valid."
+        case let .invalid(message):
+            "Token invalid: \(message)"
+        }
+    }
+
+    private var tokenStatusColor: Color {
+        switch self.tokenValidation {
+        case .valid:
+            .green
+        case .invalid:
+            .red
+        default:
+            .secondary
+        }
+    }
+
+    private func logAuth(_ message: String) async {
+        await DiagnosticsLogger.shared.message(message)
+    }
+
+    private func withTimeout<T: Sendable>(
+        seconds: TimeInterval,
+        operation: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask { try await operation() }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw URLError(.timedOut)
+            }
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
+    }
+
+    private static func formatElapsed(since start: Date) -> String {
+        let elapsed = Date().timeIntervalSince(start)
+        return String(format: "%.2fs", elapsed)
+    }
+}
+
+private enum TokenValidationState: Equatable {
+    case unknown
+    case checking
+    case valid
+    case invalid(String)
+}
+
+private enum HostMode: String, CaseIterable {
+    case githubCom
+    case enterprise
+
+    var label: String {
+        switch self {
+        case .githubCom:
+            "GitHub.com"
+        case .enterprise:
+            "Enterprise"
+        }
     }
 }

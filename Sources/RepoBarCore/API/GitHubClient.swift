@@ -102,7 +102,8 @@ public actor GitHubClient {
         limit: Int
     ) async throws -> [ActivityEvent] {
         let events = try await self.restAPI.userEvents(username: username, scope: scope)
-        let mapped = events.compactMap { $0.activityEventFromRepo() }
+        let webHost = self.webHostURL()
+        let mapped = events.compactMap { $0.activityEventFromRepo(webHost: webHost) }
         return Array(mapped.prefix(max(limit, 0)))
     }
 
@@ -112,7 +113,8 @@ public actor GitHubClient {
         limit: Int
     ) async throws -> [RepoCommitSummary] {
         let events = try await self.restAPI.userEvents(username: username, scope: scope)
-        let commits = events.flatMap { $0.commitSummaries() }
+        let webHost = self.webHostURL()
+        let commits = events.flatMap { $0.commitSummaries(webHost: webHost) }
         return Array(commits.prefix(max(limit, 0)))
     }
 
@@ -214,12 +216,7 @@ public actor GitHubClient {
 
     public func currentUser() async throws -> UserIdentity {
         let user = try await self.restAPI.fetchCurrentUser()
-        var components = URLComponents()
-        components.scheme = self.apiHost.scheme ?? "https"
-        let rawHost = self.apiHost.host ?? "github.com"
-        components.host = rawHost == "api.github.com" ? "github.com" : rawHost
-        let hostURL = components.url ?? URL(string: "https://github.com")!
-        return UserIdentity(username: user.login, host: hostURL)
+        return UserIdentity(username: user.login, host: self.webHostURL())
     }
 
     public func searchRepositories(matching query: String) async throws -> [Repository] {
@@ -254,6 +251,14 @@ public actor GitHubClient {
             restRateLimit: requestDiagnostics.restRateLimit,
             graphQLRateLimit: self.graphQL.rateLimitSnapshot()
         )
+    }
+
+    private func webHostURL() -> URL {
+        var components = URLComponents()
+        components.scheme = self.apiHost.scheme ?? "https"
+        let rawHost = self.apiHost.host ?? "github.com"
+        components.host = rawHost == "api.github.com" ? "github.com" : rawHost
+        return components.url ?? URL(string: "https://github.com")!
     }
 
     /// Recent repositories for the authenticated user, sorted by activity.

@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- macOS: add “Show only my repositories” toggle (owner filter) for repo lists and search.
+- macOS: fix the toggle to reset to “show all” when disabled; disable it when signed out.
+- macOS: fix commit links to respect GitHub Enterprise host (#9).
+- macOS: add GitHub.com vs Enterprise login picker with OAuth help text (#4).
+- macOS: show OAuth errors in Accounts sign-in UI (#6).
+- macOS: add token status checks + forced refresh buttons in Settings for debugging auth issues.
+- macOS: prevent token check/refresh from hanging; add timeouts and diagnostics logging.
+- macOS: detect auth failures (401/refresh errors) and log out cleanly with a clearer message.
+- macOS: stabilize repo settings autocomplete (no spinner layout wiggle), widen the dropdown, show repo stats/badges, fix filtering/hover/scroll, and anchor/size the dropdown to results (no bounce on shrink).
+- macOS: widen Enterprise Base URL field and shrink auth progress indicators to avoid layout jumps.
+- iOS: update app icon + logo assets.
+
 ## 0.1.2 - 2025-12-31
 
 - iOS app preview (not finished, not in the App Store yet): repo list/cards, activity feed, detail drill‑downs, login/settings, icons/branding, and continued auth/UI polish.

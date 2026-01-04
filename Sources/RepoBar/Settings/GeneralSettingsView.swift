@@ -6,6 +6,24 @@ struct GeneralSettingsView: View {
     @Bindable var session: Session
     let appState: AppState
 
+    private var normalizedCurrentUsername: String? {
+        guard case let .loggedIn(user) = self.session.account else { return nil }
+        return user.username.lowercased()
+    }
+
+    private var showOnlyMyRepos: Bool {
+        guard let username = self.normalizedCurrentUsername else { return false }
+        return OwnerFilter.normalize(self.session.settings.repoList.ownerFilter) == [username]
+    }
+
+    private func toggleShowOnlyMyRepos(_ enabled: Bool) {
+        guard let username = self.normalizedCurrentUsername else { return }
+        self.session.settings.repoList.ownerFilter = enabled ? [username] : []
+
+        self.appState.persistSettings()
+        self.appState.requestRefresh(cancelInFlight: true)
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             Form {
@@ -78,10 +96,15 @@ struct GeneralSettingsView: View {
                             self.appState.persistSettings()
                             self.appState.requestRefresh(cancelInFlight: true)
                         }
+                    Toggle("Show only my repositories", isOn: Binding(
+                        get: { self.showOnlyMyRepos },
+                        set: { self.toggleShowOnlyMyRepos($0) }
+                    ))
+                    .disabled(self.normalizedCurrentUsername == nil)
                 } header: {
                     Text("Repositories")
                 } footer: {
-                    Text("Filters apply to repo lists and search.")
+                    Text("Filters apply to repo lists and search. 'Show only my repositories' hides repos owned by organizations and other users.")
                 }
             }
             .formStyle(.grouped)

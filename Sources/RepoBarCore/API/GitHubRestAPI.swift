@@ -50,14 +50,38 @@ struct GitHubRestAPI: Sendable {
     func searchRepositories(matching query: String) async throws -> [RepoItem] {
         let token = try await tokenProvider()
         let baseURL = await apiHost()
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         var components = URLComponents(
             url: baseURL.appending(path: "/search/repositories"),
             resolvingAgainstBaseURL: false
         )!
-        components.queryItems = [URLQueryItem(name: "q", value: query), URLQueryItem(name: "per_page", value: "5")]
+        components.queryItems = [
+            URLQueryItem(name: "q", value: Self.repoSearchQuery(from: trimmed)),
+            URLQueryItem(name: "per_page", value: "8")
+        ]
         let (data, _) = try await authorizedGet(url: components.url!, token: token)
         let decoded = try GitHubDecoding.decode(SearchResponse.self, from: data)
         return decoded.items
+    }
+
+    private static func repoSearchQuery(from query: String) -> String {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "stars:>0" }
+
+        if trimmed.contains("/") {
+            let parts = trimmed.split(separator: "/", maxSplits: 1, omittingEmptySubsequences: false)
+            let owner = parts.first.map(String.init)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let name = (parts.count > 1 ? String(parts[1]) : "").trimmingCharacters(in: .whitespacesAndNewlines)
+
+            if !owner.isEmpty, !name.isEmpty {
+                return "\(name) in:name user:\(owner)"
+            }
+            if !owner.isEmpty {
+                return "user:\(owner)"
+            }
+        }
+
+        return "\(trimmed) in:name"
     }
 
     func userEvents(username: String, scope: GlobalActivityScope) async throws -> [RepoEvent] {
@@ -104,6 +128,7 @@ struct GitHubRestAPI: Sendable {
     func recentActivity(owner: String, name: String, limit: Int) async throws -> ActivitySnapshot {
         let token = try await tokenProvider()
         let baseURL = await apiHost()
+        let webHost = self.webHostURL(from: baseURL)
         var components = URLComponents(
             url: baseURL.appending(path: "/repos/\(owner)/\(name)/events"),
             resolvingAgainstBaseURL: false
@@ -112,7 +137,7 @@ struct GitHubRestAPI: Sendable {
         let (data, _) = try await authorizedGet(url: components.url!, token: token)
         let events = try GitHubDecoding.decode([RepoEvent].self, from: data)
         let mapped = events.map { event in
-            (event: event, activity: event.activityEvent(owner: owner, name: name))
+            (event: event, activity: event.activityEvent(owner: owner, name: name, webHost: webHost))
         }
         let limited = Array(mapped.prefix(max(limit, 0)))
         let preferred = limited.first(where: { $0.event.hasRichPayload })?.activity
@@ -120,6 +145,14 @@ struct GitHubRestAPI: Sendable {
             events: limited.map(\.activity),
             latest: preferred ?? limited.first?.activity
         )
+    }
+
+    private func webHostURL(from apiHost: URL) -> URL {
+        var components = URLComponents()
+        components.scheme = apiHost.scheme ?? "https"
+        let rawHost = apiHost.host ?? "github.com"
+        components.host = rawHost == "api.github.com" ? "github.com" : rawHost
+        return components.url ?? URL(string: "https://github.com")!
     }
 
     func trafficStats(owner: String, name: String) async throws -> TrafficStats? {

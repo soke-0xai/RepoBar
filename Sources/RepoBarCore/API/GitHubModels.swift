@@ -294,13 +294,13 @@ extension RepoEvent {
             || (self.payload.commits?.isEmpty == false)
     }
 
-    func commitSummaries() -> [RepoCommitSummary] {
+    func commitSummaries(webHost: URL) -> [RepoCommitSummary] {
         guard let repo else { return [] }
         let parts = repo.name.split(separator: "/", maxSplits: 1).map(String.init)
         guard parts.count == 2 else { return [] }
         let owner = parts[0]
         let name = parts[1]
-        let repoURL = URL(string: "https://github.com/\(owner)/\(name)")!
+        let repoURL = webHost.appending(path: owner).appending(path: name)
         let commits = self.payload.commits ?? []
         return commits.compactMap { commit in
             let message = commit.message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -320,8 +320,8 @@ extension RepoEvent {
         }
     }
 
-    func activityEvent(owner: String, name: String) -> ActivityEvent {
-        let url = self.activityURL(owner: owner, name: name)
+    func activityEvent(owner: String, name: String, webHost: URL) -> ActivityEvent {
+        let url = self.activityURL(owner: owner, name: name, webHost: webHost)
         let metadata = self.activityMetadata(owner: owner, name: name, url: url)
         let baseTitle = metadata.label.isEmpty ? self.displayTitle : metadata.label
         let preview = self.payload.comment?.bodyPreview ?? baseTitle
@@ -337,15 +337,15 @@ extension RepoEvent {
         )
     }
 
-    func activityEventFromRepo() -> ActivityEvent? {
+    func activityEventFromRepo(webHost: URL) -> ActivityEvent? {
         guard let repo else { return nil }
         let parts = repo.name.split(separator: "/", maxSplits: 1)
         guard parts.count == 2 else { return nil }
-        return self.activityEvent(owner: String(parts[0]), name: String(parts[1]))
+        return self.activityEvent(owner: String(parts[0]), name: String(parts[1]), webHost: webHost)
     }
 
-    private func activityURL(owner: String, name: String) -> URL {
-        let repoURL = URL(string: "https://github.com/\(owner)/\(name)")!
+    private func activityURL(owner: String, name: String, webHost: URL) -> URL {
+        let repoURL = webHost.appending(path: owner).appending(path: name)
         let starURL = repoURL.appending(path: "stargazers")
         let fallbackURL = (self.eventType == .watch) ? starURL : repoURL
         let commitSHA = self.payload.head ?? self.payload.commits?.first?.sha

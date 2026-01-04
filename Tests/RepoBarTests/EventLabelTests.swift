@@ -41,6 +41,7 @@ struct EventLabelTests {
 
     @Test
     func activityEventUsesIssueTitleAndRepoFallback() {
+        let webHost = URL(string: "https://github.com")!
         let event = RepoEvent(
             type: "IssuesEvent",
             actor: EventActor(login: "octo", avatarUrl: nil),
@@ -53,7 +54,7 @@ struct EventLabelTests {
             ),
             createdAt: Date()
         )
-        let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
+        let activity = event.activityEvent(owner: "steipete", name: "RepoBar", webHost: webHost)
         #expect(activity.title == "Issue opened #123: Fix it")
         #expect(activity.actor == "octo")
         #expect(activity.url.absoluteString == "https://example.com/issue/1")
@@ -61,6 +62,7 @@ struct EventLabelTests {
 
     @Test
     func activityEventUsesStargazerLinkForWatchEvents() {
+        let webHost = URL(string: "https://github.com")!
         let event = RepoEvent(
             type: "WatchEvent",
             actor: EventActor(login: "octo", avatarUrl: nil),
@@ -68,12 +70,13 @@ struct EventLabelTests {
             payload: EventPayload(action: nil, comment: nil, issue: nil, pullRequest: nil),
             createdAt: Date()
         )
-        let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
+        let activity = event.activityEvent(owner: "steipete", name: "RepoBar", webHost: webHost)
         #expect(activity.url.absoluteString == "https://github.com/steipete/RepoBar/stargazers")
     }
 
     @Test
     func activityEventUsesCommitLinkForPushEvents() {
+        let webHost = URL(string: "https://github.com")!
         let event = RepoEvent(
             type: "PushEvent",
             actor: EventActor(login: "octo", avatarUrl: nil),
@@ -92,12 +95,13 @@ struct EventLabelTests {
             ),
             createdAt: Date()
         )
-        let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
+        let activity = event.activityEvent(owner: "steipete", name: "RepoBar", webHost: webHost)
         #expect(activity.url.absoluteString == "https://github.com/steipete/RepoBar/commit/abc123")
     }
 
     @Test
     func activityMetadataCapturesActionTargetAndLink() {
+        let webHost = URL(string: "https://github.com")!
         let event = RepoEvent(
             type: "PullRequestEvent",
             actor: EventActor(login: "octo", avatarUrl: nil),
@@ -115,13 +119,14 @@ struct EventLabelTests {
             ),
             createdAt: Date()
         )
-        let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
+        let activity = event.activityEvent(owner: "steipete", name: "RepoBar", webHost: webHost)
         #expect(activity.metadata?.label == "PR merged #42: Ship it")
         #expect(activity.metadata?.deepLink?.absoluteString == "https://example.com/pr/42")
     }
 
     @Test
     func activityMetadataIncludesReleaseTag() {
+        let webHost = URL(string: "https://github.com")!
         let event = RepoEvent(
             type: "ReleaseEvent",
             actor: EventActor(login: "octo", avatarUrl: nil),
@@ -139,12 +144,13 @@ struct EventLabelTests {
             ),
             createdAt: Date()
         )
-        let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
+        let activity = event.activityEvent(owner: "steipete", name: "RepoBar", webHost: webHost)
         #expect(activity.metadata?.label == "Release published: v1.0.0")
     }
 
     @Test
     func activityMetadataFormatsForkTarget() {
+        let webHost = URL(string: "https://github.com")!
         let event = RepoEvent(
             type: "ForkEvent",
             actor: EventActor(login: "octo", avatarUrl: nil),
@@ -162,7 +168,7 @@ struct EventLabelTests {
             ),
             createdAt: Date()
         )
-        let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
+        let activity = event.activityEvent(owner: "steipete", name: "RepoBar", webHost: webHost)
         #expect(activity.metadata?.label == "Forked → octo/fork")
     }
 }

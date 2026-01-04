@@ -17,8 +17,9 @@ struct GlobalActivityTests {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let event = try decoder.decode(RepoEvent.self, from: data)
+        let webHost = URL(string: "https://github.com")!
 
-        let activity = event.activityEventFromRepo()
+        let activity = event.activityEventFromRepo(webHost: webHost)
 
         #expect(activity != nil)
         #expect(activity?.actor == "steipete")
@@ -40,8 +41,40 @@ struct GlobalActivityTests {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let event = try decoder.decode(RepoEvent.self, from: data)
+        let webHost = URL(string: "https://github.com")!
 
-        #expect(event.activityEventFromRepo() == nil)
+        #expect(event.activityEventFromRepo(webHost: webHost) == nil)
+    }
+
+    @Test
+    func commitSummaries_useEnterpriseHost() throws {
+        let data = Data("""
+        {
+          "type": "PushEvent",
+          "actor": { "login": "steipete", "avatar_url": "https://example.com/avatar.png" },
+          "repo": { "name": "acme/Widgets", "url": "https://ghe.example.com/api/v3/repos/acme/Widgets" },
+          "payload": {
+            "commits": [
+              {
+                "sha": "def456",
+                "message": "Ship it",
+                "author": { "name": "Octo" },
+                "timestamp": "2024-01-02T00:00:00Z"
+              }
+            ]
+          },
+          "created_at": "2024-01-02T00:00:00Z"
+        }
+        """.utf8)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let event = try decoder.decode(RepoEvent.self, from: data)
+        let webHost = URL(string: "https://ghe.example.com")!
+
+        let commits = event.commitSummaries(webHost: webHost)
+
+        #expect(commits.count == 1)
+        #expect(commits.first?.url.absoluteString == "https://ghe.example.com/acme/Widgets/commit/def456")
     }
 
     @Test

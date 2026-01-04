@@ -136,7 +136,7 @@ public enum RepoAutocompleteScoring {
         if lowerTarget == query { return weights.exact }
         if lowerTarget.hasPrefix(query) { return weights.prefix }
         if lowerTarget.contains(query) { return weights.substring }
-        if Self.isSubsequence(query, of: lowerTarget) { return weights.subsequence }
+        if query.count <= 3, Self.isSubsequence(query, of: lowerTarget) { return weights.subsequence }
         return nil
     }
 

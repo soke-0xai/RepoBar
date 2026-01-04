@@ -50,6 +50,6 @@ enum AppLimits {
 
     enum Autocomplete {
         static let addRepoRecentLimit: Int = 10
-        static let settingsSearchLimit: Int = 8
+        static let settingsSearchLimit: Int = 10
     }
 }
